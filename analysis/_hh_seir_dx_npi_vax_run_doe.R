@@ -1,11 +1,13 @@
 rm(list = ls())
+
+devtools::load_all()
+
 # install.packages("diffeqr")
 # library(diffeqr)
 library(tidyverse)
 library(deSolve)
 library(dplyr)
 library(foreach)
-source("analysis/_hh_seir_dx_npi_vax_functions.R")
 
 # Read the location as an argument
 args <- commandArgs(trailingOnly = TRUE)

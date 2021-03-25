@@ -1,11 +1,12 @@
 rm(list = ls())
-# install.packages("diffeqr")
-# library(diffeqr)
+
+devtools::load_all()
+
 library(tidyverse)
 library(deSolve)
 library(dplyr)
 library(foreach)
-source("analysis/_hh_seir_dx_npi_vax_functions.R")
+
 n_hhsize <- 3 # 2 # 1
 n_pop_size <- 1000000
 n_inf   <- 1
