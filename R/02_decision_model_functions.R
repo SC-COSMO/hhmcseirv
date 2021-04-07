@@ -924,21 +924,38 @@ update_param_list <- function(l_params_all, params_updated){
   return(l_params_all)
 }
 
+#' Undetected infections
+#'
+#' \code{calc_inf_nodx} Calculate number of undetected infections over time.
+#'
+#' @Param l_out List with output from SC-COSMO and all parameters
+#' @return
+#' A data.frame with the number of undetected infections as columns over time
+#' @export
+calc_inf_nodx <- function(l_out){
+  df_out <- l_out$df_out_hh_mc_seir
+  l_params_all <- l_out$l_params_all
+  df_InfNoDx <- data.frame(time = df_out$time,
+                           InfNoDX = rowSums(df_out[, l_params_all$v_names_inf,
+                                                    drop=FALSE]),
+                           check.names = FALSE)
+  return(df_InfNoDx)
+}
 #' Total infections
-#' 
+#'
 #' \code{calc_inf_totals} Calculate total number of infections over time.
-#' 
-#' @param l_out List with output from SC-COSMO and all parameters
-#' @return 
+#'
+#' @Param l_out List with output from SC-COSMO and all parameters
+#' @return
 #' A data.frame with the total number of infections as columns over time
 #' @export
 calc_inf_totals <- function(l_out){
   df_out <- l_out$df_out_hh_mc_seir
   l_params_all <- l_out$l_params_all
-  
-  df_Inftot <- data.frame(time = df_out$time, 
-                          Inftot = rowSums(df_out[, l_params_all$v_names_inf,
-                                                  drop=FALSE]), 
+  df_Inftot <- data.frame(time = df_out$time,
+                          Inftot = rowSums(df_out[, c(l_params_all$v_names_inf,
+                                                      l_params_all$v_names_inf_dx),
+                                                  drop=FALSE]),
                           check.names = FALSE)
   return(df_Inftot)
 }
