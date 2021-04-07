@@ -33,7 +33,7 @@ load(file = "output/output_doe_mc_seirv_all_nathist.RData")
 df_doe_mc_seirv_runs_failed <- df_doe_mc_seirv_runs %>%
   filter(pid %in% v_failed_pid)
 
-## compute epdiemic outputs for each of the good pids
+## compute epidemic outputs for each of the good pids
 ## Put all these outputs in a long data.frame
 l_out_test <- list_l_out[[1]]
 show_MC_SEIRV_model_results(l_out_test)
