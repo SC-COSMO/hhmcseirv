@@ -23,6 +23,12 @@ for(i in 1:length(v_pid)){ # n_pid <- v_pid[1]
 v_good_pid <- as.numeric(names(list_l_out))[!is.na(as.numeric(names(list_l_out)))]
 # v_failed_pid <- v_pid[is.na(as.numeric(names(list_l_out)))]
 
+save(list_l_out, v_good_pid,
+     file = "output/output_doe_mc_seirv_all_nathist.RData")
+
+#### Analyze output from DOE Natural History ####
+load(file = "output/output_doe_mc_seirv_all_nathist.RData")
+
 ## Obtain runs for which DOE failed
 df_doe_mc_seirv_runs_failed <- df_doe_mc_seirv_runs %>%
   filter(pid %in% v_failed_pid)
