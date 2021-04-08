@@ -50,12 +50,44 @@ for(n_pid in v_good_pid){ # n_pid <- v_good_pid[1]
                               df_inf_temp)
   
 }
-df_out_inf_all <- df_out_inf_all %>%
-  group_by(pid) %>%
-  mutate(max_Inftot = max(Inftot),
-         max_Inftot_time = time[which.max(Inftot)])
+save(df_out_inf_all, 
+     file = "output/df_output_doe_mc_seirv_all_nathist.RData")
 
-## Analyze epidemic outputs
-# Find the t at which I(t) is at its max
-# Find times at which I(t) is at a percentage of its max
+#### Analyze epidemic outputs ####
+load(file = "output/df_output_doe_mc_seirv_all_nathist.RData")
+df_out_inf_all$n_hhsize <- ordered(df_out_inf_all$n_hhsize)
+
+df_out_inf_all_summ <- df_out_inf_all %>%
+  group_by(pid) %>%
+  mutate(# Find the t at which I(t) is at its max
+         max_Inftot = max(Inftot),
+         max_Inftot_time = time[which.max(Inftot)],
+         # Find times at which I(t) is at a percentage of its max
+         p05_Inftot_time = max(time[which(Inftot <= max_Inftot*0.05 & time < max_Inftot_time)]),
+         p10_Inftot_time = max(time[which(Inftot <= max_Inftot*0.10 & time < max_Inftot_time)]),
+         p25_Inftot_time = max(time[which(Inftot <= max_Inftot*0.25 & time < max_Inftot_time)]),
+         p50_Inftot_time = max(time[which(Inftot <= max_Inftot*0.50 & time < max_Inftot_time)]),
+         # Find times at which x number of IDX(t) are seen
+         IDX500_time = max(time[which((Inftot-InfNoDX) <= 500 & time < max_Inftot_time)])) %>%
+  slice_head() %>%
+  ungroup()
+
+hist(df_out_inf_all_summ$max_Inftot)
+hist(df_out_inf_all_summ$max_Inftot_time)
+hist(df_out_inf_all_summ$IDX500_time)
+hist(df_out_inf_all_summ$p05_Inftot_time)
+hist(df_out_inf_all_summ$p10_Inftot_time)
+hist(df_out_inf_all_summ$p25_Inftot_time)
+hist(df_out_inf_all_summ$p50_Inftot_time)
+
+df_out_inf_all %>% 
+  filter(r_beta == 0.25 & r_tau == 0.40 & r_omega == 0)
+
+ggplot(df_out_inf_all %>% filter(r_beta == 0.25 & r_tau == 0.40 & r_omega == 0), 
+       aes(x = time, y = Inftot, color = n_hhsize)) +
+  geom_line() +
+  facet_wrap(n_exp_states ~ n_inf_states)
+
+
+  
 # Ranges of times at which I starts to rise: compute doubling times
