@@ -81,7 +81,7 @@ hist(df_out_inf_all_summ$p25_Inftot_time)
 hist(df_out_inf_all_summ$p50_Inftot_time)
 
 df_out_inf_all %>% 
-  filter(r_beta == 0.25 & r_tau == 0.40 & r_omega == 0)
+  filter(r_beta == 0.25 & r_tau == 0.40 & r_omega == 0, )
 
 ggplot(df_out_inf_all %>% filter(r_beta == 0.25 & r_tau == 0.40 & r_omega == 0), 
        aes(x = time, y = Inftot, color = n_hhsize)) +

@@ -79,7 +79,7 @@ hh_mc_seir_out <- function(parameters){
                 rep(0, n_inf_states),
                 R = 0,
                 V = 0,
-                v_HH0,
+                v_HH0*n_pop_size,
                 Infcomm = 0,
                 Infhh   = 0
     )
