@@ -81,12 +81,13 @@ hist(df_out_inf_all_summ$p25_Inftot_time)
 hist(df_out_inf_all_summ$p50_Inftot_time)
 
 df_out_inf_all %>% 
-  filter(r_beta == 0.25 & r_tau == 0.40 & r_omega == 0)
+  filter(r_beta == 0.25 & r_tau == 0.50 & r_omega == 0 & Inftot >=0)
 
-ggplot(df_out_inf_all %>% filter(r_beta == 0.25 & r_tau == 0.40 & r_omega == 0), 
+ggplot(df_out_inf_all %>% filter(r_beta == 0.35 & r_tau == 0.40 & r_omega == 0  & Inftot >=-100000 & n_hhsize <6 & time < 60), 
        aes(x = time, y = Inftot, color = n_hhsize)) +
-  geom_line() +
-  facet_wrap(n_exp_states ~ n_inf_states)
+  geom_line(size = 1.5) +
+  facet_grid(n_exp_states ~ n_inf_states) +
+  theme_bw()
 
 
   
