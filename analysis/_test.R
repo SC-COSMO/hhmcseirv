@@ -107,7 +107,12 @@ get_npi(n_time = 70, parameters = l_parameters)
 
 ## Test run
 system.time(
-  l_out <- hh_mc_seir_out(parameters = l_parameters)
+  l_out_test <- hh_mc_seir_out(parameters = l_parameters)
 )
-View(l_out$df_out_hh_mc_seir)
-
+# state <- l_out_test$df_out_hh_mc_seir[12, v_names_states_all]
+# sum(l_out_test$df_out_hh_mc_seir[1, v_names_states_all])
+# View(l_out_test$df_out_hh_mc_seir)
+show_MC_SEIRV_model_results(l_out_test)
+df_inf_test <- calc_inf_totals(l_out_test)
+ggplot(df_inf_test, aes(x = time, y = Inftot)) +
+  geom_line()
