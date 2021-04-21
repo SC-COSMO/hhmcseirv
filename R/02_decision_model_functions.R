@@ -79,7 +79,7 @@ hh_mc_seir_out <- function(parameters){
                 rep(0, n_inf_states),
                 R = 0,
                 V = 0,
-                v_HH0*n_pop_size,
+                v_HH0*n_pop_size/n_hhsize,
                 Infcomm = 0,
                 Infhh   = 0
     )
@@ -191,7 +191,7 @@ hh_mc_seir_dx <- function(t, state, parameters) {
     
     ### vector with household members
     # v_HH <- state[(n_states_tot+1):length(state)]
-    v_HH <- (state[(n_states_tot+1):(length(state)-2)]/n_pop_size)*n_hhsize # The "-2" is because we added two compartments: incidence from community and household
+    v_HH <- (state[(n_states_tot+1):(length(state)-2)]/N)*n_hhsize # The "-2" is because we added two compartments: incidence from community and household
     
     # n_err <- sum(v_HH[v_HH<0])
     # v_HH[v_HH<0] = 0
@@ -217,7 +217,7 @@ hh_mc_seir_dx <- function(t, state, parameters) {
     m_hh_vax_rate_eff <- m_hh_vax * (r_vax * eff_vax)
     
     ### Household infection
-    household_infection_rate <- gen_household_transmission_mc_seir(r_tau = r_tau_avg, #r_tau
+    household_infection_rate <- gen_household_transmission_mc_seir(r_tau = r_tau_avg, #r_tau, #
                                                                    n_hhsize = n_hhsize,
                                                                    n_contacts_hh = n_contacts_hh,
                                                                    v_HH = v_HH,
@@ -240,10 +240,10 @@ hh_mc_seir_dx <- function(t, state, parameters) {
       r_omega*R +                                           # Inflows 
       r_vax_omega * V -                                     # Coming from V through vaccine waning immunity
       n_lambda*S -                                          # Outflows
-      n_household_infection_rate*N -                        # Outflows
+      n_household_infection_rate*S -                        # Outflows # previously multiplied by N!!!
       (r_vax*eff_vax) * S -                                 # Outflows
       r_death*S                                             # Outflows
-    v_d_E <- c(n_lambda*S + n_household_infection_rate*N,     # Inflows
+    v_d_E <- c(n_lambda*S + n_household_infection_rate*S,     # Inflows # previously multiplied by N!!!
                (r_sigma*n_exp_states)*v_E[-n_exp_states]) - # Inflows
       (r_sigma*n_exp_states)*v_E -                          # Outflows
       r_death*v_E                                           # Outflows
@@ -313,7 +313,7 @@ hh_mc_seir_dx <- function(t, state, parameters) {
     # - v_tot_deaths ### I ADDED THIS
     
     ### I ADDED THIS
-    v_dHH <- v_dHH*n_pop_size/n_hhsize
+    v_dHH <- v_dHH*N/n_hhsize
     ### I ADDED THIS
     
     m_test <- cbind(v_tot_births,
