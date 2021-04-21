@@ -228,7 +228,7 @@ hh_mc_seir_dx <- function(t, state, parameters) {
                                                                    m_possibilities = m_possibilities)
     ## Force of infection from household to community
     n_household_infection_rate <- as.numeric(household_infection_rate)
-    print(c(t, n_household_infection_rate))
+    # print(c(t, n_household_infection_rate))
     
     ### Force of infection
     n_lambda  <- r_beta_current*(I/N) + r_beta_current*p_alpha_dx*(IDX/N)
