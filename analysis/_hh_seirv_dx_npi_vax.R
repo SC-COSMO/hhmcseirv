@@ -144,9 +144,9 @@ saveRDS(df_doe_mc_seirv_nathist_hhsize, file = "data/df_doe_mc_seirv_nathist_hhs
 df_doe_mc_seirv_control <- df_doe_mc_seirv %>% 
   filter(n_hhsize %in% c(1, 3, 5), 
          # n_exp_states == 3, n_inf_states == 2,
-         r_omega %in% c(0, 0.02),
+         r_omega %in% c(0, 0.01, 0.02),
          r_tau %in% c(0.40, 0.50),
-         r_beta == 0.25)
+         r_beta %in% c(0.25, 0.35))
 save(df_doe_mc_seirv_control, file = "data/df_doe_mc_seirv_control.RData")
 saveRDS(df_doe_mc_seirv_control, file = "data/df_doe_mc_seirv_control.RDS")
 
