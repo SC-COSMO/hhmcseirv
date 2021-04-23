@@ -1,14 +1,14 @@
 rm(list= ls())
 
-GLOBAL_BATCH_FILE_PREFIX <- "./jobs_control"
+GLOBAL_BATCH_FILE_PREFIX <- "./jobs_nathist"
 GLOBAL_BATCH_FILE_SUFFIX <- ".txt"
 
 GLOBAL_RSCRIPT_PATH <- "C:\\Program Files\\R\\R-3.6.3\\bin\\x64\\Rscript.exe"
 
 
-GLOBAL_RUN_PATH <- "analysis/_hh_seir_dx_npi_vax_run_doe.R"
+GLOBAL_RUN_PATH <- "analysis/_hh_seir_dx_nathist_run_doe.R"
 
-GLOBAL_PARAM_FILE <- "data/df_doe_mc_seirv_control.RDS"
+GLOBAL_PARAM_FILE <- "data/df_doe_mc_seirv_nathist.RDS"
 df_doe_mc_seirv_runs <- readRDS(GLOBAL_PARAM_FILE)
 v_pid <- unique(df_doe_mc_seirv_runs$pid)
 

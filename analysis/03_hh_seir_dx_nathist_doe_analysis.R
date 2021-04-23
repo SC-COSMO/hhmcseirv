@@ -68,27 +68,48 @@ df_out_inf_all_summ <- df_out_inf_all %>%
          p25_Inftot_time = max(time[which(Inftot <= max_Inftot*0.25 & time < max_Inftot_time)]),
          p50_Inftot_time = max(time[which(Inftot <= max_Inftot*0.50 & time < max_Inftot_time)]),
          # Find times at which x number of IDX(t) are seen
-         IDX500_time = max(time[which((Inftot-InfNoDX) <= 500 & time < max_Inftot_time)])) %>%
+         IDX500_time = max(time[which((Inftot-InfNoDX) <= 500 & time < max_Inftot_time)]),
+         IDX100_time = max(time[which((Inftot-InfNoDX) <= 100 & time < max_Inftot_time)])) %>%
   slice_head() %>%
   ungroup()
 
 hist(df_out_inf_all_summ$max_Inftot)
 hist(df_out_inf_all_summ$max_Inftot_time)
+hist(df_out_inf_all_summ$IDX100_time)
 hist(df_out_inf_all_summ$IDX500_time)
-hist(df_out_inf_all_summ$p05_Inftot_time)
-hist(df_out_inf_all_summ$p10_Inftot_time)
-hist(df_out_inf_all_summ$p25_Inftot_time)
-hist(df_out_inf_all_summ$p50_Inftot_time)
+hist(df_out_inf_all_summ$p05_Inftot_time, breaks = 15)
+hist(df_out_inf_all_summ$p10_Inftot_time, breaks = 15)
+hist(df_out_inf_all_summ$p25_Inftot_time, breaks = 15)
+hist(df_out_inf_all_summ$p50_Inftot_time, breaks = 15)
 
 df_out_inf_all %>% 
   filter(r_beta == 0.25 & r_tau == 0.50 & r_omega == 0 & Inftot >=0)
 
-ggplot(df_out_inf_all %>% filter(r_beta == 0.35 & r_tau == 0.40 & r_omega == 0  & Inftot >=-100000 & n_hhsize <6 & time < 60), 
+ggplot(df_out_inf_all %>% filter(r_beta == 0.25 & r_tau == 0.50 & r_omega == 0.020 & time <= 70 & n_hhsize < 7), 
        aes(x = time, y = Inftot, color = n_hhsize)) +
-  geom_line(size = 1.5) +
+  geom_line(size = 1.3) +
   facet_grid(n_exp_states ~ n_inf_states) +
-  theme_bw()
+  theme_bw(base_size = 16) +
+  theme(legend.position = "bottom")
 
+df_params_naming <- expand.grid(r_beta  = unique(df_out_inf_all$r_beta),
+                                r_tau   = unique(df_out_inf_all$r_tau),
+                                r_omega = unique(df_out_inf_all$r_omega))
 
-  
+for(i in 1:nrow(df_params_naming)){
+  ggplot(df_out_inf_all %>% filter(r_beta == df_params_naming[i, ]$r_beta & 
+                                   r_tau == df_params_naming[i, ]$r_tau & 
+                                   r_omega ==df_params_naming[i, ]$r_omega & 
+                                   time <= 70 & n_hhsize < 7), 
+         aes(x = time, y = Inftot, color = n_hhsize)) +
+    geom_line(size = 1.3) +
+    facet_grid(n_exp_states ~ n_inf_states) +
+    theme_bw(base_size = 16) +
+    theme(legend.position = "bottom")
+  ggsave(filename = paste0("figs/03_hh_seir_dx_nathist_doe_plot_", 
+                           "o", df_params_naming[i, ]$r_omega, "_",
+                           "t", df_params_naming[i, ]$r_tau, "_",
+                           "b", df_params_naming[i, ]$r_beta, ".pdf"), 
+         width = 8, height = 6)
+}
 # Ranges of times at which I starts to rise: compute doubling times

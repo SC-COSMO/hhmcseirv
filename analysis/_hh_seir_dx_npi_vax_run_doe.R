@@ -13,6 +13,7 @@ library(foreach)
 args <- commandArgs(trailingOnly = TRUE)
 n_pid <- ifelse(!is.na(args[1]), args[1], "1") 
 n_pid <- as.numeric(n_pid)
+# n_pid <- 337
 print(n_pid)
 
 df_doe_mc_seirv <- readRDS("data/df_doe_mc_seirv.RDS")
@@ -52,7 +53,7 @@ n_inf_states <- df_params$n_inf_states
 # r_vax <- # TBD
 
 ### NPIs
-v_npi_times  <- c(0, 15, 16, 70, max_time+1)
+v_npi_times  <- c(0, 19, 20, 70, max_time+1)
 # v_npi_levels <- c(1, 1, 0.2, 0.2, 0.2)
 v_npi_levels <- c(1, 1, df_params$level_npi, df_params$level_npi, df_params$level_npi)
 # v_npi_levels <- c(1, 1, 0.6, 0.6, 0.6)
@@ -62,21 +63,23 @@ fun_npi <- approxfun(x = v_npi_times, y = v_npi_levels, method = "linear")
 
 ### Vax rates
 ### vaccination strategies
-v_time_stop_vax <- c(0, 40, 41, max_time+1)
+v_time_stop_vax <- c(0, 19, 20, 21, max_time+1)
 v_duration  <- diff(c(0, v_time_stop_vax))
 # v_cum_prop_time <- c(0, 0.80, 0, 0)
-v_cum_prop_time <- c(0, df_params$vax_prop, 0, 0)
+v_cum_prop_time <- c(0, 0, df_params$vax_prop, 0, 0)
 
-v_vax_rates <- cbind(daily_rate(cum_prop = v_cum_prop_time[2], # We need constant rate to get up to cumulative coverage
-                                duration = v_duration[2]),       # We need constant rate to get up to cumulative coverage
+v_vax_rates <- cbind(#daily_rate(cum_prop = v_cum_prop_time[1], # We need constant rate to get up to cumulative coverage
+                     #           duration = v_duration[1]),       # We need constant rate to get up to cumulative coverage
+                     0,
                      daily_rate(cum_prop = v_cum_prop_time[2],
                                 duration = v_duration[2]),
                      daily_rate(cum_prop = v_cum_prop_time[3],
                                 duration = v_duration[3]),
                      daily_rate(cum_prop = v_cum_prop_time[4],
-                                duration = v_duration[4]))
+                                duration = v_duration[4]),
+                     0)
 fun_vax <- approxfun(x = v_time_stop_vax, y = v_vax_rates, method = "linear")
-fun_vax(0:100)
+# fun_vax(9.1)
 
 l_parameters <- list(n_pop_size = n_pop_size,
                      n_inf   = n_inf, 
@@ -109,5 +112,5 @@ get_npi(n_time = 70, parameters = l_parameters)
 system.time(
   l_out <- hh_mc_seir_out(parameters = l_parameters)
 )
-
+# show_MC_SEIRV_model_results(l_out)
 save(l_out, file = paste0("output/output_doe_mc_seirv_", n_pid,".RData"))
