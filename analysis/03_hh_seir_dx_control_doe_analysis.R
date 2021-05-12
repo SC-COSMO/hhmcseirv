@@ -28,10 +28,10 @@ v_good_pid <- as.numeric(names(list_l_out))[!is.na(as.numeric(names(list_l_out))
 # v_failed_pid <- v_pid[is.na(as.numeric(names(list_l_out)))]
 
 save(list_l_out, v_good_pid,
-     file = "output/output_doe_mc_seirv_all_nathist.RData")
-
+     file = "output/output_doe_mc_seirv_all_control.RData")
+gc()
 #### Analyze output from DOE Natural History ####
-load(file = "output/output_doe_mc_seirv_all_nathist.RData")
+load(file = "output/output_doe_mc_seirv_all_control.RData")
 
 ## Obtain runs for which DOE failed
 df_doe_mc_seirv_runs_failed <- df_doe_mc_seirv_runs %>%
@@ -55,10 +55,10 @@ for(n_pid in v_good_pid){ # n_pid <- v_good_pid[1]
   
 }
 save(df_out_inf_all, 
-     file = "output/df_output_doe_mc_seirv_all_nathist.RData")
+     file = "output/df_output_doe_mc_seirv_all_control.RData")
 
 #### Analyze epidemic outputs ####
-load(file = "output/df_output_doe_mc_seirv_all_nathist.RData")
+load(file = "output/df_output_doe_mc_seirv_all_control.RData")
 df_out_inf_all$n_hhsize <- ordered(df_out_inf_all$n_hhsize)
 
 df_out_inf_all_summ <- df_out_inf_all %>%
