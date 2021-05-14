@@ -89,8 +89,15 @@ hist(df_out_inf_all_summ$p50_Inftot_time, breaks = 15)
 df_out_inf_all %>% 
   filter(r_beta == 0.25 & r_tau == 0.50 & r_omega == 0 & Inftot >=0)
 
+df_out_inf_all %>% 
+  filter(r_beta == 0.25 & r_tau == 0.40 & r_omega == 0.020 & time <= 70 & 
+           n_hhsize == 5,
+           n_exp_states == 3 & n_inf_states == 3,
+         vax_prop == 0.9) %>%
+  View()
+
 ggplot(df_out_inf_all %>% 
-         filter(r_beta == 0.25 & r_tau == 0.50 & r_omega == 0.020 & time <= 70 & level_npi == 1), 
+         filter(r_beta == 0.25 & r_tau == 0.40 & r_omega == 0.020 & time <= 70 & level_npi == 1), 
        aes(x = time, y = Inftot, color = n_hhsize)) +
   geom_line(size = 1.3) +
   facet_grid(n_exp_states ~ n_inf_states) +
@@ -99,7 +106,7 @@ ggplot(df_out_inf_all %>%
 
 
 ggplot(df_out_inf_all %>% 
-         filter(r_beta == 0.25 & r_tau == 0.50 & r_omega == 0.020 & time <= 70 & 
+         filter(r_beta == 0.25 & r_tau == 0.40 & r_omega == 0.020 & time <= 70 & 
                   n_exp_states == 3 & n_inf_states == 3), 
        aes(x = time, y = Inftot, color = n_hhsize, linetype = as.factor(eff_vax))) +
   geom_line(size = 1.1) +
