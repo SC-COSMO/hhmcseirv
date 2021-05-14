@@ -53,7 +53,7 @@ n_inf_states <- df_params$n_inf_states
 # r_vax <- # TBD
 
 ### NPIs
-v_npi_times  <- c(0, 19, 20, 70, max_time+1)
+v_npi_times  <- c(0, 9, 10, 70, max_time+1)
 # v_npi_levels <- c(1, 1, 0.2, 0.2, 0.2)
 v_npi_levels <- c(1, 1, df_params$level_npi, df_params$level_npi, df_params$level_npi)
 # v_npi_levels <- c(1, 1, 0.6, 0.6, 0.6)
@@ -63,7 +63,7 @@ fun_npi <- approxfun(x = v_npi_times, y = v_npi_levels, method = "linear")
 
 ### Vax rates
 ### vaccination strategies
-v_time_stop_vax <- c(0, 19, 20, 21, max_time+1)
+v_time_stop_vax <- c(0, 9, 10, 11, max_time+1)
 v_duration  <- diff(c(0, v_time_stop_vax))
 # v_cum_prop_time <- c(0, 0.80, 0, 0)
 v_cum_prop_time <- c(0, 0, df_params$vax_prop, 0, 0)
