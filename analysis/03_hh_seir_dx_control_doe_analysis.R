@@ -104,7 +104,6 @@ ggplot(df_out_inf_all %>%
   theme_bw(base_size = 16) +
   theme(legend.position = "bottom")
 
-
 ggplot(df_out_inf_all %>% 
          filter(r_beta == 0.25 & r_tau == 0.40 & r_omega == 0.020 & time <= 70 & 
                   n_exp_states == 3 & n_inf_states == 3), 
@@ -113,6 +112,24 @@ ggplot(df_out_inf_all %>%
   facet_grid((1-level_npi) ~ vax_prop) +
   theme_bw(base_size = 16) +
   theme(legend.position = "bottom")
+
+
+
+
+ggplot(df_out_inf_all %>% 
+         filter(r_beta == 0.25 & r_tau == 0.40 & r_omega == 0.020 & time <= 70 & 
+                  n_exp_states == 3 & n_inf_states == 3 &
+                  eff_vax == 0.5), 
+       aes(x = time, y = as.factor(eff_vax), fill = Inftot)) +
+  geom_tile() +
+  facet_grid((1-level_npi) + n_hhsize ~ vax_prop) +
+  theme_bw(base_size = 16) +
+  theme(legend.position = "bottom")
+
+# List of to-dos:
+# - add computation time
+# - Add Incident infections equation and capture that on the output
+# HH vs non-HH transmission.
 
 df_params_naming <- expand.grid(r_beta  = unique(df_out_inf_all$r_beta),
                                 r_tau   = unique(df_out_inf_all$r_tau),
