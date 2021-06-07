@@ -59,7 +59,12 @@ save(df_out_inf_all,
 
 #### Analyze epidemic outputs ####
 load(file = "output/df_output_doe_mc_seirv_all_control.RData")
+df_out_inf_all$Esize <- paste0("# of E compartments = ", df_out_inf_all$n_exp_states)
+df_out_inf_all$Isize <- paste0("# of I compartments = ", df_out_inf_all$n_inf_states)
+df_out_inf_all$`Household size` <- ordered(df_out_inf_all$n_hhsize, unique(df_out_inf_all$n_hhsize))
 df_out_inf_all$n_hhsize <- ordered(df_out_inf_all$n_hhsize)
+df_out_inf_all$PropVax <- paste0("Proportion vaccinated = ", scales::percent(df_out_inf_all$vax_prop))
+df_out_inf_all$NPIeff <- paste0("NPI effectiveness = ", scales::percent(1-df_out_inf_all$level_npi))
 
 df_out_inf_all_summ <- df_out_inf_all %>%
   group_by(pid) %>%
@@ -73,7 +78,8 @@ df_out_inf_all_summ <- df_out_inf_all %>%
     p50_Inftot_time = max(time[which(Inftot <= max_Inftot*0.50 & time < max_Inftot_time)]),
     # Find times at which x number of IDX(t) are seen
     IDX500_time = max(time[which((Inftot-InfNoDX) <= 500 & time < max_Inftot_time)]),
-    IDX100_time = max(time[which((Inftot-InfNoDX) <= 100 & time < max_Inftot_time)])) %>%
+    IDX100_time = max(time[which((Inftot-InfNoDX) <= 100 & time < max_Inftot_time)]),
+    CumInfTot = sum(Inftot)) %>%
   slice_head() %>%
   ungroup()
 
@@ -100,21 +106,81 @@ ggplot(df_out_inf_all %>%
          filter(r_beta == 0.25 & r_tau == 0.40 & r_omega == 0.020 & time <= 70 & level_npi == 1), 
        aes(x = time, y = Inftot, color = n_hhsize)) +
   geom_line(size = 1.3) +
-  facet_grid(n_exp_states ~ n_inf_states) +
+  facet_grid(Esize ~ Isize) +
   theme_bw(base_size = 16) +
-  theme(legend.position = "bottom")
+  theme(legend.position = "bottom",
+        strip.background = element_rect(colour="white", fill="lightgray"),
+        # legend.position=c(.88,.3),
+        legend.key = element_blank(),
+        legend.margin = margin(0, 0, 0, 0),
+        legend.box.margin=margin(-10,-10,-10,-10))
+
 
 ggplot(df_out_inf_all %>% 
-         filter(r_beta == 0.25 & r_tau == 0.40 & r_omega == 0.020 & time <= 70 & 
-                  n_exp_states == 3 & n_inf_states == 3), 
-       aes(x = time, y = Inftot, color = n_hhsize, linetype = as.factor(eff_vax))) +
+         filter(r_beta == 0.25 & r_tau == 0.40 & r_omega == 0.000 & time <= 70 & 
+                  n_exp_states == 3 & n_inf_states == 3 & n_hhsize %in% c(1, 3, 5) & 
+                  eff_vax %in% c(0.9)), 
+       aes(x = time, y = Inftot, color = `Household size`)) + # linetype = as.factor(eff_vax))
   geom_line(size = 1.1) +
-  facet_grid((1-level_npi) ~ vax_prop) +
+  facet_grid(NPIeff ~ PropVax) +
+  # scale_color_viridis_d(option = "C", direction = -1) +
   theme_bw(base_size = 16) +
-  theme(legend.position = "bottom")
+  theme(legend.position = "bottom",
+        strip.background = element_rect(colour="white", fill="lightgray"),
+        # legend.position=c(.88,.3),
+        legend.key = element_blank(),
+        legend.margin = margin(0, 0, 0, 0),
+        legend.box.margin=margin(-10,-10,-10,-10))
 
+ggplot(df_out_inf_all_summ %>% 
+         filter(r_beta == 0.25 & r_tau == 0.40 & r_omega == 0.000 & time <= 70 & 
+                  n_exp_states == 3 & n_inf_states == 3 & n_hhsize %in% c(1, 3, 5) & 
+                  eff_vax %in% c(0.9)), 
+       aes(x = `Household size`, y = CumInfTot, fill = `Household size`)) + # linetype = as.factor(eff_vax))
+  geom_col(color = NA) +
+  facet_grid(NPIeff ~ PropVax) +
+  scale_y_continuous(labels = function(x)round(x/10e6, digits = 2)) +
+  # scale_fill_viridis_d(option = "C", direction = -1) +
+  # scale_color_jcolors(palette = "rainbow") +
+  # scale_fill_brewer(palette = "Spectral") +
+  # xlab("Household size") +
+  ylab("Cumulative infections (millions)") +
+  theme_bw(base_size = 16) +
+  theme(strip.background = element_rect(colour="white", fill="white"),
+        strip.text = element_text(hjust = 0, face = "bold", size = 12),
+        legend.position = c(""),
+        # legend.position = c(.88,.8),
+        # legend.position = "bottom",
+        # legend.margin = margin(0, 0, 0, 0),
+        # legend.box.margin=margin(-10,-10,-10,-10)
+        legend.key = element_blank())
 
-
+ggplot(df_out_inf_all_summ %>% 
+         filter(r_beta == 0.25 & r_tau == 0.50 & r_omega == 0.000 & time <= 70 & 
+                  n_exp_states == 3 & n_inf_states == 3 & n_hhsize %in% c(1, 3, 5) & 
+                  eff_vax %in% c(0.9)), 
+       aes(x = `Household size`, y = max_Inftot, fill = `Household size`)) + # linetype = as.factor(eff_vax))
+  geom_col(color = NA) +
+  facet_grid(NPIeff ~ PropVax) +
+  scale_y_continuous(labels = function(x) scales::percent(x/10e6, accuracy = 1.0)) +
+  # scale_fill_viridis_d(option = "D", direction = -1) +
+  scale_fill_grey() +
+  # scale_color_jcolors(palette = "rainbow") +
+  # scale_fill_brewer(palette = "Spectral") +
+  # xlab("Household size") +
+  ylab("Magnitude of epidemic peak (% of total population)") +
+  theme_bw(base_size = 16) +
+  theme(strip.background = element_rect(colour="white", fill="white"),
+        strip.text = element_text(hjust = 0, face = "bold", size = 12),
+        legend.position = c(""),
+        # legend.position = c(.88,.8),
+        # legend.position = "bottom",
+        # legend.margin = margin(0, 0, 0, 0),
+        # legend.box.margin=margin(-10,-10,-10,-10)
+        legend.key = element_blank())
+ggsave("figs/SMDM_household_communiy_MC_SEIR_NPI_VAX.pdf", width = 11, height = 8)
+ggsave("figs/SMDM_household_communiy_MC_SEIR_NPI_VAX.png", width = 11, height = 8)
+ggsave("figs/SMDM_household_communiy_MC_SEIR_NPI_VAX.jpeg", width = 11, height = 8)
 
 ggplot(df_out_inf_all %>% 
          filter(r_beta == 0.25 & r_tau == 0.40 & r_omega == 0.020 & time <= 70 & 
