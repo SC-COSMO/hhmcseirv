@@ -35,7 +35,7 @@ p_death_inf   <- 0.02
 r_growth_rate <- 1# 1.01 # population growth rate
 r_birth       <- r_death*r_growth_rate
 
-max_time <- 100
+max_time <- 200
 
 times <- seq(0, max_time, by = 1)
 
@@ -106,8 +106,9 @@ l_parameters <- list(n_pop_size = n_pop_size,
 get_npi(n_time = 70, parameters = l_parameters)
 
 ## Test run
-system.time(
+sim_time <- system.time(
   l_out <- hh_mc_seir_out(parameters = l_parameters)
 )
+l_out$l_params_all$sim_time <- sim_time[3]
 
 save(l_out, file = paste0("output/output_doe_mc_seirv_", n_pid,".RData"))

@@ -106,9 +106,11 @@ l_parameters <- list(n_pop_size = n_pop_size,
 get_npi(n_time = 70, parameters = l_parameters)
 
 ## Test run
-system.time(
-  l_out_test <- hh_mc_seir_out(parameters = l_parameters)
+sim_time <- system.time(
+  l_out <- hh_mc_seir_out(parameters = l_parameters)
 )
+l_out$l_params_all$sim_time <- sim_time[3]
+
 # state <- l_out_test$df_out_hh_mc_seir[12, v_names_states_all]
 # sum(l_out_test$df_out_hh_mc_seir[1, v_names_states_all])
 # View(l_out_test$df_out_hh_mc_seir)
