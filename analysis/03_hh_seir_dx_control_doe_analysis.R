@@ -1,3 +1,4 @@
+rm(list = ls())
 library(dplyr)
 library(ggplot2)
 library(patchwork)
@@ -101,7 +102,7 @@ hist(df_out_inf_all_summ$p50_Inftot_time, breaks = 15)
 
 # Meta regression
 fit_hh_peak_date <- lm(log(max_Inftot_time) ~ n_exp_states + n_inf_states + 
-                         n_hhsize + log(r_tau) + log(r_beta) + r_omega, 
+                         n_hhsize + r_tau + r_beta + r_omega, 
                        data = df_out_inf_all_summ)
 summary(fit_hh_peak_date)
 fit_hh_peak <- lm(log(max_Inftot) ~ n_exp_states + n_inf_states + 

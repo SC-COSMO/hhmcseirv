@@ -95,16 +95,17 @@ get_npi(n_time = 70, parameters = l_parameters)
 sim_time <- system.time(
   l_out <- hh_mc_seir_out(parameters = l_parameters)
 )
+sim_time
 l_out$l_params_all$sim_time <- sim_time[3]
 
 # show_MC_EI_model_results(l_out)
 show_MC_SEIRV_model_results(l_out)
 
-v_hhsize  <- seq(1, 7)
+v_hhsize  <- seq(1, 6)
 v_num_exp <- seq(1, 3)
 v_num_inf <- seq(1, 3)
-v_r_beta  <- c(0.25, 0.35)
-v_r_tau   <- c(0.40, 0.50)
+v_r_beta  <- c(0.20, 0.30, 0.40)
+v_r_tau   <- c(0.40, 0.45, 0.50)
 v_r_omega <- c(0, 1/100, 1/50)
 v_level_npi <- c(1, 0.8, 0.4)
 v_vax_eff   <- c(1, 0.9, 0.5)
@@ -134,7 +135,7 @@ save(df_doe_mc_seirv_nathist, file = "data/df_doe_mc_seirv_nathist.RData")
 saveRDS(df_doe_mc_seirv_nathist, file = "data/df_doe_mc_seirv_nathist.RDS")
 
 df_doe_mc_seirv_nathist_hhsize <- df_doe_mc_seirv_nathist %>% 
-  filter(r_beta  == 0.25, 
+  filter(r_beta  == 0.20, 
          r_tau   == 0.40, 
          r_omega == 0)
 save(df_doe_mc_seirv_nathist_hhsize, file = "data/df_doe_mc_seirv_nathist_hhsize.RData")
@@ -142,11 +143,11 @@ saveRDS(df_doe_mc_seirv_nathist_hhsize, file = "data/df_doe_mc_seirv_nathist_hhs
 
 #### Control measures DoE
 df_doe_mc_seirv_control <- df_doe_mc_seirv %>% 
-  filter(n_hhsize %in% c(1, 3, 5), 
+  filter(n_hhsize %in% c(1, 2, 3, 4, 5) & 
          # n_exp_states == 3, n_inf_states == 2,
-         r_omega %in% c(0, 0.01, 0.02),
-         r_tau %in% c(0.40, 0.50),
-         r_beta %in% c(0.25, 0.35))
+         r_omega %in% c(0, 1/100, 1/50) &
+         r_tau %in% c(0.40, 0.45, 0.50) &
+         r_beta %in% c(0.20, 0.30, 0.40))
 save(df_doe_mc_seirv_control, file = "data/df_doe_mc_seirv_control.RData")
 saveRDS(df_doe_mc_seirv_control, file = "data/df_doe_mc_seirv_control.RDS")
 
