@@ -1,5 +1,18 @@
 #### Analyze epidemic outputs ####
+
+rm(list = ls())
+
+# Load packages ----
+library(dplyr)
+library(ggplot2)
+library(patchwork)
+library(stargazer)
+source("R/02_decision_model_functions.R")
+
+# Load data ----
 load(file = "output/df_output_doe_mc_seirv_all_control.RData")
+
+# Rename variables for pretty plotting format ----
 df_out_inf_all$Esize <- paste0("# of E compartments = ", df_out_inf_all$n_exp_states)
 df_out_inf_all$Isize <- paste0("# of I compartments = ", df_out_inf_all$n_inf_states)
 df_out_inf_all$`Household size` <- ordered(df_out_inf_all$n_hhsize, unique(df_out_inf_all$n_hhsize))
@@ -12,9 +25,12 @@ df_out_inf_all$`Multicompartment structure` <- paste0("E=",
                                                       ", I=", 
                                                       df_out_inf_all$n_inf_states)
 
+# Summarize output ----
 df_out_inf_all_summ <- df_out_inf_all %>%
   group_by(pid) %>%
   mutate(# Find the t at which I(t) is at its max
+    ref_category = ifelse(n_hhsize == 1 & n_exp_states == 1 & n_inf_states ==1, 
+                          1, 0), # Define HH=1, E=1, I=1 as reference category
     max_Inftot = max(Inftot),
     max_Inftot_time = time[which.max(Inftot)],
     # Find times at which I(t) is at a percentage of its max
@@ -29,30 +45,44 @@ df_out_inf_all_summ <- df_out_inf_all %>%
   slice_head() %>%
   ungroup()
 
-hist(df_out_inf_all_summ$max_Inftot)
-hist(df_out_inf_all_summ$max_Inftot_time)
-hist(df_out_inf_all_summ$IDX100_time)
-hist(df_out_inf_all_summ$IDX500_time)
-hist(df_out_inf_all_summ$p05_Inftot_time, breaks = 15)
-hist(df_out_inf_all_summ$p10_Inftot_time, breaks = 15)
-hist(df_out_inf_all_summ$p25_Inftot_time, breaks = 15)
-hist(df_out_inf_all_summ$p50_Inftot_time, breaks = 15)
+## Compute differential outcomes compared to reference category
+df_out_inf_all_summ$max_Inftot_ref <- df_out_inf_all_summ$max_Inftot - 
+  df_out_inf_all_summ$max_Inftot[df_out_inf_all_summ$ref_category==1]
+df_out_inf_all_summ$max_Inftot_time_ref <- df_out_inf_all_summ$max_Inftot_time - 
+  df_out_inf_all_summ$max_Inftot_time[df_out_inf_all_summ$ref_category==1]
+df_out_inf_all_summ$CumInfTot_ref <- df_out_inf_all_summ$CumInfTot - 
+  df_out_inf_all_summ$CumInfTot[df_out_inf_all_summ$ref_category==1]
 
-# Meta regression
-fit_hh_peak_date <- lm(log(max_Inftot_time) ~ n_exp_states + n_inf_states + 
-                         n_hhsize + r_tau + r_beta + r_omega, 
+# hist(df_out_inf_all_summ$max_Inftot)
+# hist(df_out_inf_all_summ$max_Inftot_time)
+# hist(df_out_inf_all_summ$IDX100_time)
+# hist(df_out_inf_all_summ$IDX500_time)
+# hist(df_out_inf_all_summ$p05_Inftot_time, breaks = 15)
+# hist(df_out_inf_all_summ$p10_Inftot_time, breaks = 15)
+# hist(df_out_inf_all_summ$p25_Inftot_time, breaks = 15)
+# hist(df_out_inf_all_summ$p50_Inftot_time, breaks = 15)
+
+### Meta regression on category-specific outcomes
+fit_hh_peak_date <- lm(log(max_Inftot_time) ~ n_exp_states*n_inf_states + 
+                         n_exp_states*n_hhsize + n_inf_states*n_hhsize +
+                         r_tau + r_beta + r_omega, 
                        data = df_out_inf_all_summ)
 summary(fit_hh_peak_date)
-fit_hh_peak <- lm(log(max_Inftot) ~ n_exp_states + n_inf_states + 
+fit_hh_peak <- lm(log(max_Inftot) ~ n_exp_states*n_inf_states + 
+                    n_exp_states*n_hhsize + n_inf_states*n_hhsize + 
                     n_hhsize + r_tau + r_beta + r_omega,
                   data = df_out_inf_all_summ)
 summary(fit_hh_peak)
-fit_hh_size <- lm(log(CumInfTot) ~ n_exp_states + n_inf_states +
+fit_hh_size <- lm(log(CumInfTot) ~ n_exp_states*n_inf_states + 
+                    n_exp_states*n_hhsize + n_inf_states*n_hhsize +
                     n_hhsize + r_tau + r_beta + r_omega, 
                   data = df_out_inf_all_summ)
 summary(fit_hh_size)
 
-## Visualization
+stargazer(fit_hh_peak_date, fit_hh_peak, fit_hh_size, type = "text")
+### Meta regression on outcomes comparing to reference category
+
+# Visualization ----
 
 df_out_inf_all %>% 
   filter(r_beta == 0.25 & r_tau == 0.50 & r_omega == 0 & Inftot >=0)
