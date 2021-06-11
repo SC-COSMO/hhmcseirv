@@ -1,65 +1,3 @@
-rm(list = ls())
-library(dplyr)
-library(ggplot2)
-library(patchwork)
-library(stargazer)
-source("R/02_decision_model_functions.R")
-
-
-GLOBAL_PARAM_FILE <- "data/df_doe_mc_seirv_control.RDS"
-df_doe_mc_seirv_runs <- readRDS(GLOBAL_PARAM_FILE)
-v_pid <- unique(df_doe_mc_seirv_runs$pid)
-n_doe <- length(v_pid)
-
-list_l_out <- list()
-v_failed_pid <- c()
-for(i in 1:n_doe){ # n_pid <- v_pid[1]
-  tryCatch({
-    load(file = paste0("output/output_doe_mc_seirv_", v_pid[i],".RData")) 
-    list_l_out[[i]] <- l_out
-    names(list_l_out)[i] <- v_pid[i]
-  }, error = function(cond) {
-    print(paste(Sys.time(),": +++ ERROR in pid", v_pid[i], cond, "\n"))
-    v_failed_pid <<- c(v_failed_pid, v_pid[i])
-  })
-  if(i/(n_doe/100) == round(i/(n_doe/100),0)) {
-    cat('\r', paste(i/n_doe * 100, "% done", sep = " "))
-  }
-}
-
-v_good_pid <- as.numeric(names(list_l_out))[!is.na(as.numeric(names(list_l_out)))]
-# v_failed_pid <- v_pid[is.na(as.numeric(names(list_l_out)))]
-
-save(list_l_out, v_good_pid,
-     file = "output/output_doe_mc_seirv_all_control.RData")
-gc()
-#### Analyze output from DOE Natural History ####
-load(file = "output/output_doe_mc_seirv_all_control.RData")
-
-## Obtain runs for which DOE failed
-df_doe_mc_seirv_runs_failed <- df_doe_mc_seirv_runs %>%
-  filter(pid %in% v_failed_pid)
-
-## compute epidemic outputs for each of the good pids
-## Put all these outputs in a long data.frame
-l_out_test <- list_l_out[[1]]
-show_MC_SEIRV_model_results(l_out_test)
-df_inf_test <- calc_inf_totals(l_out_test)
-
-df_out_inf_all <- c()
-for(n_pid in v_good_pid){ # n_pid <- v_good_pid[1]
-  l_out_temp <- list_l_out[[as.character(n_pid)]]
-  df_inf_temp <- data.frame(df_doe_mc_seirv_runs %>%
-                              filter(pid %in% n_pid),
-                            calc_inf_nodx(l_out_temp),
-                            Inftot = calc_inf_totals(l_out_temp)$Inftot)
-  df_out_inf_all <- bind_rows(df_out_inf_all, 
-                              df_inf_temp)
-  
-}
-save(df_out_inf_all, 
-     file = "output/df_output_doe_mc_seirv_all_control.RData")
-
 #### Analyze epidemic outputs ####
 load(file = "output/df_output_doe_mc_seirv_all_control.RData")
 df_out_inf_all$Esize <- paste0("# of E compartments = ", df_out_inf_all$n_exp_states)
@@ -122,7 +60,7 @@ df_out_inf_all %>%
 df_out_inf_all %>% 
   filter(r_beta == 0.25 & r_tau == 0.40 & r_omega == 0.020 & time <= 70 & 
            n_hhsize == 5,
-           n_exp_states == 3 & n_inf_states == 3,
+         n_exp_states == 3 & n_inf_states == 3,
          vax_prop == 0.9) #%>% View()
 
 ggplot(df_out_inf_all %>% 
@@ -219,10 +157,10 @@ for(i in 1:nrow(df_params_naming)){
 #### SMDM Figures ####
 ## Magnitude of epidemic peak
 gg_epidemic_peak <- ggplot(df_out_inf_all_summ %>% 
-         filter(r_beta == 0.25 & r_tau == 0.50 & r_omega == 0.000 & time <= 70 & 
-                  n_exp_states == 3 & n_inf_states == 3 & n_hhsize %in% c(1, 3, 5) & 
-                  eff_vax %in% c(0.9), vax_prop %in% c(0, 0.3, 0.6), level_npi != 0.8), 
-       aes(x = `Household size`, y = max_Inftot, fill = `Household size`)) + # linetype = as.factor(eff_vax))
+                             filter(r_beta == 0.25 & r_tau == 0.50 & r_omega == 0.000 & time <= 70 & 
+                                      n_exp_states == 3 & n_inf_states == 3 & n_hhsize %in% c(1, 3, 5) & 
+                                      eff_vax %in% c(0.9), vax_prop %in% c(0, 0.3, 0.6), level_npi != 0.8), 
+                           aes(x = `Household size`, y = max_Inftot, fill = `Household size`)) + # linetype = as.factor(eff_vax))
   geom_col(color = NA) +
   facet_grid(NPIeff ~ PropVax) +
   scale_y_continuous(labels = function(x) scales::percent(x/10e6, accuracy = 1.0)) +
@@ -254,11 +192,11 @@ ggsave(plot = gg_epidemic_peak,
 
 ## Epidemic curves
 gg_epidemic_curve <- ggplot(df_out_inf_all %>% 
-                             filter(r_beta == 0.25 & r_tau == 0.50 & r_omega == 0.000 & time <= 120 & 
-                                      n_exp_states == 3 & n_inf_states == 3 & n_hhsize %in% c(1, 3, 5) & 
-                                      eff_vax %in% c(0.5, 0.9), vax_prop %in% c(0, 0.3, 0.6), level_npi != 0.8), 
-                           aes(x = time, y = Inftot/10e6, color = `Household size`, 
-                               linetype = `Vaccine effectiveness`)) + # 
+                              filter(r_beta == 0.25 & r_tau == 0.50 & r_omega == 0.000 & time <= 120 & 
+                                       n_exp_states == 3 & n_inf_states == 3 & n_hhsize %in% c(1, 3, 5) & 
+                                       eff_vax %in% c(0.5, 0.9), vax_prop %in% c(0, 0.3, 0.6), level_npi != 0.8), 
+                            aes(x = time, y = Inftot/10e6, color = `Household size`, 
+                                linetype = `Vaccine effectiveness`)) + # 
   geom_line(size = 1.1) +
   facet_grid(NPIeff ~ PropVax) +
   scale_y_continuous(labels = function(x) scales::percent(x, accuracy = 1.0)) +
@@ -307,10 +245,10 @@ ggsave(plot = gg_epidemic_curve_peak,
 
 ## Magnitude of epidemic peak
 gg_epidemic_peak_E1_I1 <- ggplot(df_out_inf_all_summ %>% 
-                             filter(r_beta == 0.25 & r_tau == 0.50 & r_omega == 0.000 & time <= 70 & 
-                                      n_exp_states == 1 & n_inf_states == 1 & n_hhsize %in% c(1, 3, 5) & 
-                                      eff_vax %in% c(0.9), vax_prop %in% c(0, 0.3, 0.6), level_npi != 0.8), 
-                           aes(x = `Household size`, y = max_Inftot/10e6, fill = `Household size`)) + # linetype = as.factor(eff_vax))
+                                   filter(r_beta == 0.25 & r_tau == 0.50 & r_omega == 0.000 & time <= 70 & 
+                                            n_exp_states == 1 & n_inf_states == 1 & n_hhsize %in% c(1, 3, 5) & 
+                                            eff_vax %in% c(0.9), vax_prop %in% c(0, 0.3, 0.6), level_npi != 0.8), 
+                                 aes(x = `Household size`, y = max_Inftot/10e6, fill = `Household size`)) + # linetype = as.factor(eff_vax))
   geom_col(color = NA) +
   facet_grid(NPIeff ~ PropVax) +
   scale_y_continuous(labels = function(x) scales::percent(x, accuracy = 1.0), limits = c(0, 0.06)) +
@@ -342,11 +280,11 @@ ggsave(plot = gg_epidemic_peak_E1_I1,
 
 ## Epidemic curves
 gg_epidemic_curve_E1_I1 <- ggplot(df_out_inf_all %>% 
-                              filter(r_beta == 0.25 & r_tau == 0.50 & r_omega == 0.000 & time <= 120 & 
-                                       n_exp_states == 1 & n_inf_states == 1 & n_hhsize %in% c(1, 3, 5) & 
-                                       eff_vax %in% c(0.5, 0.9), vax_prop %in% c(0, 0.3, 0.6), level_npi != 0.8), 
-                            aes(x = time, y = Inftot/10e6, color = `Household size`, 
-                                linetype = `Vaccine effectiveness`)) + # 
+                                    filter(r_beta == 0.25 & r_tau == 0.50 & r_omega == 0.000 & time <= 120 & 
+                                             n_exp_states == 1 & n_inf_states == 1 & n_hhsize %in% c(1, 3, 5) & 
+                                             eff_vax %in% c(0.5, 0.9), vax_prop %in% c(0, 0.3, 0.6), level_npi != 0.8), 
+                                  aes(x = time, y = Inftot/10e6, color = `Household size`, 
+                                      linetype = `Vaccine effectiveness`)) + # 
   geom_line(size = 1.1) +
   facet_grid(NPIeff ~ PropVax) +
   scale_y_continuous(labels = function(x) scales::percent(x, accuracy = 1.0), limits = c(0, 0.06)) +
@@ -394,18 +332,18 @@ ggsave(plot = gg_epidemic_curve_peak_E1_I1,
 
 ## Timing of epidemic peak
 gg_epidemic_peak_time_E1_I1_E3_I3 <- ggplot(df_out_inf_all_summ %>% 
-                                         filter(r_beta == 0.25 & r_tau == 0.50 & 
-                                                  r_omega == 0.000 & time <= 70 & 
-                                                  # n_exp_states %in% c(1, 3) & 
-                                                  # n_inf_states %in% c(1, 3) & 
-                                                  `Multicompartment structure` %in% c("E=1, I=1", "E=3, I=3") & 
-                                                  n_hhsize %in% c(1, 5) & 
-                                                  eff_vax %in% c(0.9) & 
-                                                  vax_prop %in% c(0, 0.3, 0.6) & 
-                                                  level_npi != 0.8), 
-                                       aes(x = `Household size`, y = max_Inftot_time, 
-                                           # fill = `Household size`, 
-                                           fill = `Multicompartment structure`)) +
+                                              filter(r_beta == 0.25 & r_tau == 0.50 & 
+                                                       r_omega == 0.000 & time <= 70 & 
+                                                       # n_exp_states %in% c(1, 3) & 
+                                                       # n_inf_states %in% c(1, 3) & 
+                                                       `Multicompartment structure` %in% c("E=1, I=1", "E=3, I=3") & 
+                                                       n_hhsize %in% c(1, 5) & 
+                                                       eff_vax %in% c(0.9) & 
+                                                       vax_prop %in% c(0, 0.3, 0.6) & 
+                                                       level_npi != 0.8), 
+                                            aes(x = `Household size`, y = max_Inftot_time, 
+                                                # fill = `Household size`, 
+                                                fill = `Multicompartment structure`)) +
   geom_col(color = NA, position = "dodge") +
   facet_grid(NPIeff ~ PropVax) +
   scale_y_continuous() +
@@ -440,18 +378,18 @@ ggsave(plot = gg_epidemic_peak_time_E1_I1_E3_I3,
 
 ## Magnitude of epidemic peak
 gg_epidemic_peak_E1_I1_E3_I3 <- ggplot(df_out_inf_all_summ %>% 
-                                   filter(r_beta == 0.25 & r_tau == 0.50 & 
-                                          r_omega == 0.000 & time <= 70 & 
-                                          # n_exp_states %in% c(1, 3) & 
-                                          # n_inf_states %in% c(1, 3) & 
-                                          `Multicompartment structure` %in% c("E=1, I=1", "E=3, I=3") & 
-                                          n_hhsize %in% c(1, 5) & 
-                                          eff_vax %in% c(0.9) & 
-                                          vax_prop %in% c(0, 0.3, 0.6) & 
-                                          level_npi != 0.8), 
-                                 aes(x = `Household size`, y = max_Inftot/10e6, 
-                                     # fill = `Household size`, 
-                                     fill = `Multicompartment structure`)) +
+                                         filter(r_beta == 0.25 & r_tau == 0.50 & 
+                                                  r_omega == 0.000 & time <= 70 & 
+                                                  # n_exp_states %in% c(1, 3) & 
+                                                  # n_inf_states %in% c(1, 3) & 
+                                                  `Multicompartment structure` %in% c("E=1, I=1", "E=3, I=3") & 
+                                                  n_hhsize %in% c(1, 5) & 
+                                                  eff_vax %in% c(0.9) & 
+                                                  vax_prop %in% c(0, 0.3, 0.6) & 
+                                                  level_npi != 0.8), 
+                                       aes(x = `Household size`, y = max_Inftot/10e6, 
+                                           # fill = `Household size`, 
+                                           fill = `Multicompartment structure`)) +
   geom_col(color = NA, position = "dodge") +
   facet_grid(NPIeff ~ PropVax) +
   scale_y_continuous(labels = function(x) scales::percent(x, accuracy = 1.0), limits = c(0, 0.06)) +
@@ -486,17 +424,17 @@ ggsave(plot = gg_epidemic_peak_E1_I1_E3_I3,
 
 ## Epidemic curves
 gg_epidemic_curve_E1_I1_E3_I3 <- ggplot(df_out_inf_all %>% 
-                                    filter(r_beta == 0.25 & r_tau == 0.50 & 
-                                           r_omega == 0.000 & time <= 120 & 
-                                           # n_exp_states == 1 & 
-                                           # n_inf_states == 1 & 
-                                           `Multicompartment structure` %in% c("E=1, I=1", "E=3, I=3") & 
-                                           n_hhsize %in% c(1, 5) & 
-                                           eff_vax == 0.9 & # %in% c(0.5, 0.9) & 
-                                           vax_prop %in% c(0, 0.3, 0.6) & 
-                                           level_npi != 0.8), 
-                                  aes(x = time, y = Inftot/10e6, color = `Household size`, 
-                                      linetype = `Multicompartment structure`)) + # 
+                                          filter(r_beta == 0.25 & r_tau == 0.50 & 
+                                                   r_omega == 0.000 & time <= 120 & 
+                                                   # n_exp_states == 1 & 
+                                                   # n_inf_states == 1 & 
+                                                   `Multicompartment structure` %in% c("E=1, I=1", "E=3, I=3") & 
+                                                   n_hhsize %in% c(1, 5) & 
+                                                   eff_vax == 0.9 & # %in% c(0.5, 0.9) & 
+                                                   vax_prop %in% c(0, 0.3, 0.6) & 
+                                                   level_npi != 0.8), 
+                                        aes(x = time, y = Inftot/10e6, color = `Household size`, 
+                                            linetype = `Multicompartment structure`)) + # 
   geom_line(size = 1.1) +
   facet_grid(NPIeff ~ PropVax) +
   scale_y_continuous(labels = function(x) scales::percent(x, accuracy = 1.0), limits = c(0, 0.06)) +
