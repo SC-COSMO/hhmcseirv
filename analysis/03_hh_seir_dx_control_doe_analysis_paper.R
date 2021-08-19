@@ -2,13 +2,184 @@
 
 rm(list = ls())
 
-# Load packages ----
+#### General setup ----
+### Load packages ----
 library(dplyr)
 library(ggplot2)
 library(patchwork)
 library(stargazer)
 source("R/02_decision_model_functions.R")
 
+### Define color palette ----
+jet.colors          <- colorRampPalette(c("black", "#00007F", 
+                                          "blue", "#007FFF",
+                                          "cyan", "#7FFF7F", 
+                                          "yellow", "#FF7F00",
+                                          "red", "#7F0000"))
+jet.colors_mod      <- colorRampPalette(c("darkblue", "#03002e", 
+                                          "blue", "#007FFF", 
+                                          "cyan", "#7FFF7F", 
+                                          "yellow", "#FF7F00", 
+                                          "red", "#7F0000"))
+color_map_mod       <- jet.colors_mod(120)
+color_map           <- jet.colors(120)
+
+
+#### Natural history outputs ####
+# Load data ----
+load(file = "output/df_output_doe_mc_seirv_all_nathist.RData")
+
+# Rename variables for pretty plotting format ----
+df_out_inf_all$Esize <- paste0("# of E compartments = ", df_out_inf_all$n_exp_states)
+df_out_inf_all$Isize <- paste0("# of I compartments = ", df_out_inf_all$n_inf_states)
+df_out_inf_all$`Household size` <- ordered(df_out_inf_all$n_hhsize, unique(df_out_inf_all$n_hhsize))
+# df_out_inf_all$n_hhsize <- ordered(df_out_inf_all$n_hhsize)
+df_out_inf_all$`Vaccine effectiveness` <- scales::percent(df_out_inf_all$eff_vax)
+df_out_inf_all$PropVax <- paste0("Proportion vaccinated = ", scales::percent(df_out_inf_all$vax_prop))
+df_out_inf_all$NPIeff <- paste0("NPI effectiveness = ", scales::percent(1-df_out_inf_all$level_npi))
+df_out_inf_all$`Multicompartment structure` <- paste0("E=", 
+                                                      df_out_inf_all$n_exp_states, 
+                                                      ", I=", 
+                                                      df_out_inf_all$n_inf_states)
+
+# Summarize output ----
+df_out_inf_all_summ <- df_out_inf_all %>%
+  group_by(pid) %>%
+  mutate(# Find the t at which I(t) is at its max
+    ref_category = ifelse(n_hhsize == 1 & n_exp_states == 1 & n_inf_states ==1, 
+                          1, 0), # Define HH=1, E=1, I=1 as reference category
+    max_Inftot = max(Inftot),
+    max_Inftot_time = time[which.max(Inftot)],
+    # Find times at which I(t) is at a percentage of its max
+    p05_Inftot_time = max(time[which(Inftot <= max_Inftot*0.05 & time < max_Inftot_time)]),
+    p10_Inftot_time = max(time[which(Inftot <= max_Inftot*0.10 & time < max_Inftot_time)]),
+    p25_Inftot_time = max(time[which(Inftot <= max_Inftot*0.25 & time < max_Inftot_time)]),
+    p50_Inftot_time = max(time[which(Inftot <= max_Inftot*0.50 & time < max_Inftot_time)]),
+    # Find times at which x number of IDX(t) are seen
+    IDX500_time = max(time[which((Inftot-InfNoDX) <= 500 & time < max_Inftot_time)]),
+    IDX100_time = max(time[which((Inftot-InfNoDX) <= 100 & time < max_Inftot_time)]),
+    CumInfTot = sum(Inftot)) %>%
+  slice_head() %>%
+  ungroup()
+
+## Compute differential outcomes compared to reference category
+df_out_inf_all_summ$max_Inftot_ref <- df_out_inf_all_summ$max_Inftot - 
+  df_out_inf_all_summ$max_Inftot[df_out_inf_all_summ$ref_category == 1]
+df_out_inf_all_summ$max_Inftot_time_ref <- df_out_inf_all_summ$max_Inftot_time - 
+  df_out_inf_all_summ$max_Inftot_time[df_out_inf_all_summ$ref_category == 1]
+df_out_inf_all_summ$CumInfTot_ref <- df_out_inf_all_summ$CumInfTot - 
+  df_out_inf_all_summ$CumInfTot[df_out_inf_all_summ$ref_category == 1]
+
+# hist(df_out_inf_all_summ$max_Inftot)
+# hist(df_out_inf_all_summ$max_Inftot_time)
+# hist(df_out_inf_all_summ$IDX100_time)
+# hist(df_out_inf_all_summ$IDX500_time)
+# hist(df_out_inf_all_summ$p05_Inftot_time, breaks = 15)
+# hist(df_out_inf_all_summ$p10_Inftot_time, breaks = 15)
+# hist(df_out_inf_all_summ$p25_Inftot_time, breaks = 15)
+# hist(df_out_inf_all_summ$p50_Inftot_time, breaks = 15)
+
+### Meta regression on category-specific outcomes
+## Without interactions
+fit_hh_peak_date <- lm(log(max_Inftot_time) ~ n_exp_states + n_inf_states + 
+                         n_hhsize + 
+                         r_tau + r_beta + r_omega, 
+                       data = df_out_inf_all_summ)
+summary(fit_hh_peak_date)
+
+fit_hh_peak <- lm(log(max_Inftot) ~ n_exp_states + n_inf_states + 
+                    n_hhsize + 
+                    r_tau + r_beta + r_omega,
+                  data = df_out_inf_all_summ)
+summary(fit_hh_peak)
+
+fit_hh_size <- lm(log(CumInfTot) ~ n_exp_states + n_inf_states + 
+                    n_hhsize + r_tau + r_beta + r_omega, 
+                  data = df_out_inf_all_summ)
+summary(fit_hh_size)
+
+stargazer(fit_hh_peak_date, fit_hh_peak, fit_hh_size, 
+          type = "text", out = "tables/03-metaregression_nathist_nointeractions.txt")
+stargazer(fit_hh_peak_date, fit_hh_peak, fit_hh_size, 
+          type = "latex", out = "tables/03-metaregression_nathist_nointeractions.tex")
+
+## With interactions (for appendix)
+fit_hh_int_peak_date <- lm(log(max_Inftot_time) ~ n_exp_states*n_inf_states + 
+                         n_exp_states*n_hhsize + n_inf_states*n_hhsize +
+                         r_tau + r_beta + r_omega, 
+                       data = df_out_inf_all_summ)
+summary(fit_hh_int_peak_date)
+
+fit_hh_int_peak <- lm(log(max_Inftot) ~ n_exp_states*n_inf_states + 
+                    n_exp_states*n_hhsize + n_inf_states*n_hhsize + 
+                    n_hhsize + r_tau + r_beta + r_omega,
+                  data = df_out_inf_all_summ)
+summary(fit_hh_int_peak)
+
+fit_hh_int_size <- lm(log(CumInfTot) ~ n_exp_states*n_inf_states + 
+                    n_exp_states*n_hhsize + n_inf_states*n_hhsize +
+                    n_hhsize + r_tau + r_beta + r_omega, 
+                  data = df_out_inf_all_summ)
+summary(fit_hh_int_size)
+
+stargazer(fit_hh_int_peak_date, fit_hh_int_peak, fit_hh_int_size, 
+          type = "text", 
+          out = "tables/03-metaregression_nathist_interactions_appendix.txt")
+stargazer(fit_hh_int_peak_date, fit_hh_int_peak, fit_hh_int_size, 
+          type = "latex", 
+          out = "tables/03-metaregression_nathist_interactions_appendix.tex")
+
+
+### Meta regression on outcomes comparing to reference category
+
+### Visualization
+## Epidemic curves
+gg_epidemic_curve_nathist <- ggplot(df_out_inf_all %>% 
+                                          filter(r_beta == 0.25 & r_tau == 0.50 & 
+                                                   r_omega == 0.000 & time <= 60 & 
+                                                   # n_exp_states == 1 & 
+                                                   # n_inf_states == 1 & 
+                                                   # `Multicompartment structure` %in% c("E=1, I=1", "E=3, I=3") & 
+                                                   n_hhsize < 7 &
+                                                   level_npi == 1.0), 
+                                        aes(x = time, y = Inftot/10e6, 
+                                            color = `Household size`)) + # 
+  geom_line(size = 1.05) +
+  facet_grid(Esize ~ Isize) +
+  scale_y_continuous(labels = function(x) scales::percent(x, accuracy = 1.0), limits = c(0, 0.06)) +
+  scale_color_viridis_d(option = "C", direction = -1) +
+  # scale_color_grey(start = 0.2, end = 0.6) +
+  # scale_color_gradientn(colours = rev(color_map_mod)) +
+  # scale_color_jcolors(palette = "rainbow") +
+  # scale_fill_brewer(palette = "Spectral") +
+  xlab("Time") +
+  ylab("Infected population (% of total population)") +
+  guides(color = guide_legend(title = "Household size", ncol = 1,
+                              reverse = TRUE), 
+         linetype = guide_legend(ncol = 1)) +
+  theme_bw(base_size = 16) +
+  theme(strip.background = element_rect(colour="white", fill="white"),
+        strip.text = element_text(hjust = 0, face = "bold", size = 12),
+        # legend.position = c(""),
+        legend.position = c(0.94, 0.18),
+        # legend.position = "bottom",
+        legend.margin = margin(0, 0, 0, 0),
+        legend.box.margin=margin(-10,-10,-10,-10),
+        legend.title = element_text(size = 12), 
+        legend.text = element_text(size = 12),
+        legend.key = element_blank())
+gg_epidemic_curve_nathist
+ggsave(plot = gg_epidemic_curve_nathist, 
+       filename = "figs/03_household_communiy_MC_SEIR_NATHIST_epidemic_curve.pdf", 
+       width = 12, height = 8)
+ggsave(plot = gg_epidemic_curve_nathist, 
+       filename = "figs/03_household_communiy_MC_SEIR_NATHIST_epidemic_curve.pdf.png", 
+       width = 12, height = 8)
+ggsave(plot = gg_epidemic_curve_nathist, 
+       filename = "figs/03_household_communiy_MC_SEIR_NATHIST_epidemic_curve.pdf.jpeg", 
+       width = 12, height = 8)
+
+#### Control measure (vaccination and NPI) outputs ####
 # Load data ----
 load(file = "output/df_output_doe_mc_seirv_all_control.RData")
 
@@ -53,59 +224,6 @@ df_out_inf_all_summ$max_Inftot_time_ref <- df_out_inf_all_summ$max_Inftot_time -
 df_out_inf_all_summ$CumInfTot_ref <- df_out_inf_all_summ$CumInfTot - 
   df_out_inf_all_summ$CumInfTot[df_out_inf_all_summ$ref_category==1]
 
-# hist(df_out_inf_all_summ$max_Inftot)
-# hist(df_out_inf_all_summ$max_Inftot_time)
-# hist(df_out_inf_all_summ$IDX100_time)
-# hist(df_out_inf_all_summ$IDX500_time)
-# hist(df_out_inf_all_summ$p05_Inftot_time, breaks = 15)
-# hist(df_out_inf_all_summ$p10_Inftot_time, breaks = 15)
-# hist(df_out_inf_all_summ$p25_Inftot_time, breaks = 15)
-# hist(df_out_inf_all_summ$p50_Inftot_time, breaks = 15)
-
-### Meta regression on category-specific outcomes
-## Without interactions
-fit_hh_peak_date <- lm(log(max_Inftot_time) ~ n_exp_states + n_inf_states + 
-                         n_hhsize + 
-                         r_tau + r_beta + r_omega, 
-                       data = df_out_inf_all_summ)
-summary(fit_hh_peak_date)
-
-fit_hh_peak <- lm(log(max_Inftot) ~ n_exp_states + n_inf_states + 
-                    n_hhsize + 
-                    r_tau + r_beta + r_omega,
-                  data = df_out_inf_all_summ)
-summary(fit_hh_peak)
-
-fit_hh_size <- lm(log(CumInfTot) ~ n_exp_states + n_inf_states + 
-                    n_hhsize + r_tau + r_beta + r_omega, 
-                  data = df_out_inf_all_summ)
-summary(fit_hh_size)
-
-stargazer(fit_hh_peak_date, fit_hh_peak, fit_hh_size, type = "text")
-
-## With interactions (for appendix)
-fit_hh_int_peak_date <- lm(log(max_Inftot_time) ~ n_exp_states*n_inf_states + 
-                         n_exp_states*n_hhsize + n_inf_states*n_hhsize +
-                         r_tau + r_beta + r_omega, 
-                       data = df_out_inf_all_summ)
-summary(fit_hh_int_peak_date)
-
-fit_hh_int_peak <- lm(log(max_Inftot) ~ n_exp_states*n_inf_states + 
-                    n_exp_states*n_hhsize + n_inf_states*n_hhsize + 
-                    n_hhsize + r_tau + r_beta + r_omega,
-                  data = df_out_inf_all_summ)
-summary(fit_hh_int_peak)
-
-fit_hh_int_size <- lm(log(CumInfTot) ~ n_exp_states*n_inf_states + 
-                    n_exp_states*n_hhsize + n_inf_states*n_hhsize +
-                    n_hhsize + r_tau + r_beta + r_omega, 
-                  data = df_out_inf_all_summ)
-summary(fit_hh_int_size)
-
-stargazer(fit_hh_int_peak_date, fit_hh_int_peak, fit_hh_int_size, type = "text")
-
-
-### Meta regression on outcomes comparing to reference category
 
 # Visualization ----
 
