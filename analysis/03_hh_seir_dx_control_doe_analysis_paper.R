@@ -63,23 +63,48 @@ df_out_inf_all_summ$CumInfTot_ref <- df_out_inf_all_summ$CumInfTot -
 # hist(df_out_inf_all_summ$p50_Inftot_time, breaks = 15)
 
 ### Meta regression on category-specific outcomes
-fit_hh_peak_date <- lm(log(max_Inftot_time) ~ n_exp_states*n_inf_states + 
-                         n_exp_states*n_hhsize + n_inf_states*n_hhsize +
+## Without interactions
+fit_hh_peak_date <- lm(log(max_Inftot_time) ~ n_exp_states + n_inf_states + 
+                         n_hhsize + 
                          r_tau + r_beta + r_omega, 
                        data = df_out_inf_all_summ)
 summary(fit_hh_peak_date)
-fit_hh_peak <- lm(log(max_Inftot) ~ n_exp_states*n_inf_states + 
-                    n_exp_states*n_hhsize + n_inf_states*n_hhsize + 
-                    n_hhsize + r_tau + r_beta + r_omega,
+
+fit_hh_peak <- lm(log(max_Inftot) ~ n_exp_states + n_inf_states + 
+                    n_hhsize + 
+                    r_tau + r_beta + r_omega,
                   data = df_out_inf_all_summ)
 summary(fit_hh_peak)
-fit_hh_size <- lm(log(CumInfTot) ~ n_exp_states*n_inf_states + 
-                    n_exp_states*n_hhsize + n_inf_states*n_hhsize +
+
+fit_hh_size <- lm(log(CumInfTot) ~ n_exp_states + n_inf_states + 
                     n_hhsize + r_tau + r_beta + r_omega, 
                   data = df_out_inf_all_summ)
 summary(fit_hh_size)
 
 stargazer(fit_hh_peak_date, fit_hh_peak, fit_hh_size, type = "text")
+
+## With interactions (for appendix)
+fit_hh_int_peak_date <- lm(log(max_Inftot_time) ~ n_exp_states*n_inf_states + 
+                         n_exp_states*n_hhsize + n_inf_states*n_hhsize +
+                         r_tau + r_beta + r_omega, 
+                       data = df_out_inf_all_summ)
+summary(fit_hh_int_peak_date)
+
+fit_hh_int_peak <- lm(log(max_Inftot) ~ n_exp_states*n_inf_states + 
+                    n_exp_states*n_hhsize + n_inf_states*n_hhsize + 
+                    n_hhsize + r_tau + r_beta + r_omega,
+                  data = df_out_inf_all_summ)
+summary(fit_hh_int_peak)
+
+fit_hh_int_size <- lm(log(CumInfTot) ~ n_exp_states*n_inf_states + 
+                    n_exp_states*n_hhsize + n_inf_states*n_hhsize +
+                    n_hhsize + r_tau + r_beta + r_omega, 
+                  data = df_out_inf_all_summ)
+summary(fit_hh_int_size)
+
+stargazer(fit_hh_int_peak_date, fit_hh_int_peak, fit_hh_int_size, type = "text")
+
+
 ### Meta regression on outcomes comparing to reference category
 
 # Visualization ----
