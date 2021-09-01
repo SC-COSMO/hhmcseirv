@@ -369,29 +369,32 @@ ggplot(df_out_inf_all %>%
         legend.box.margin=margin(-10,-10,-10,-10))
 
 
-ggplot(df_out_inf_all %>% 
-         filter(r_beta == 0.25 & r_tau == 0.40 & r_omega == 0.000 & time <= 70 & 
-                  n_exp_states == 3 & n_inf_states == 3 & n_hhsize %in% c(1, 3, 5) & 
-                  eff_vax %in% c(0.9)), 
-       aes(x = time, y = Inftot, color = `Household size`)) + # linetype = as.factor(eff_vax))
-  geom_line(size = 1.1) +
-  facet_grid(NPIeff ~ PropVax) +
-  # scale_color_viridis_d(option = "C", direction = -1) +
-  theme_bw(base_size = 16) +
-  theme(legend.position = "bottom",
-        strip.background = element_rect(colour="white", fill="lightgray"),
-        # legend.position=c(.88,.3),
-        legend.key = element_blank(),
-        legend.margin = margin(0, 0, 0, 0),
-        legend.box.margin=margin(-10,-10,-10,-10))
+# ggplot(df_out_inf_all %>% 
+#          filter(r_beta == 0.25 & r_tau == 0.40 & r_omega == 0.000 & time <= 70 & 
+#                   n_exp_states == 3 & n_inf_states == 3 & n_hhsize %in% c(1, 3, 5) & 
+#                   eff_vax %in% c(0.9)), 
+#        aes(x = time, y = Inftot, color = `Household size`)) + # linetype = as.factor(eff_vax))
+#   geom_line(size = 1.1) +
+#   facet_grid(NPIeff ~ PropVax) +
+#   # scale_color_viridis_d(option = "C", direction = -1) +
+#   theme_bw(base_size = 16) +
+#   theme(legend.position = "bottom",
+#         strip.background = element_rect(colour="white", fill="lightgray"),
+#         # legend.position=c(.88,.3),
+#         legend.key = element_blank(),
+#         legend.margin = margin(0, 0, 0, 0),
+#         legend.box.margin=margin(-10,-10,-10,-10))
 
 ggplot(df_out_inf_all_control_summ %>% 
-         filter(r_beta == 0.25 & r_tau == 0.40 & r_omega == 0.000 & time <= 70 & 
+         filter(r_beta == 0.25 & r_tau == 0.40 & r_omega == 0.020 & time <= 70 & 
                   n_hhsize %in% c(1, 3, 5) &
-                  eff_vax %in% c(0.9)), 
-       aes(x = `Household size`, y = max_Inftot_diff_perc, color = `Multicompartment structure`)) + # linetype = as.factor(eff_vax))
-  geom_point() +
-  facet_grid(NPIeff ~ PropVax) +
+                  eff_vax %in% c(1.0) & vax_prop == 0.0, level_npi != 1), 
+       aes(x = `Household size`, y = -max_Inftot_diff, 
+           group = Isize, color = Isize, fill = Esize)) + # linetype = as.factor(eff_vax))
+  geom_bar(stat = "identity", position = position_dodge(0.8)) +
+  # facet_grid(NPIeff ~ Esize) +
+  facet_wrap(NPIeff ~ Esize, scales = "free") +
+  scale_fill_grey() +
   # scale_y_continuous(labels = function(x)round(x/10e6, digits = 2)) +
   # scale_fill_viridis_d(option = "C", direction = -1) +
   # scale_color_jcolors(palette = "rainbow") +
@@ -399,6 +402,7 @@ ggplot(df_out_inf_all_control_summ %>%
   # xlab("Household size") +
   # ylab("Cumulative infections (millions)") +
   theme_bw(base_size = 16) +
+  # coord_flip() +
   theme(strip.background = element_rect(colour="white", fill="white"),
         strip.text = element_text(hjust = 0, face = "bold", size = 12),
         # legend.position = c(""),
@@ -408,15 +412,15 @@ ggplot(df_out_inf_all_control_summ %>%
         # legend.box.margin=margin(-10,-10,-10,-10)
         legend.key = element_blank())
 
-ggplot(df_out_inf_all %>% 
-         filter(r_beta == 0.25 & r_tau == 0.40 & r_omega == 0.020 & time <= 70 & 
-                  n_exp_states == 3 & n_inf_states == 3 &
-                  eff_vax == 0.5), 
-       aes(x = time, y = as.factor(eff_vax), fill = Inftot)) +
-  geom_tile() +
-  facet_grid((1-level_npi) + n_hhsize ~ vax_prop) +
-  theme_bw(base_size = 16) +
-  theme(legend.position = "bottom")
+# ggplot(df_out_inf_all %>%
+#          filter(r_beta == 0.25 & r_tau == 0.40 & r_omega == 0.020 & time <= 70 &
+#                   n_exp_states == 3 & n_inf_states == 3 &
+#                   eff_vax == 0.5),
+#        aes(x = time, y = as.factor(eff_vax), fill = Inftot)) +
+#   geom_tile() +
+#   facet_grid((1-level_npi) + n_hhsize ~ vax_prop) +
+#   theme_bw(base_size = 16) +
+#   theme(legend.position = "bottom")
 
 # List of to-dos:
 # - add computation time
