@@ -62,13 +62,26 @@ df_out_inf_all_summ <- df_out_inf_all %>%
   slice_head() %>%
   ungroup()
 
-## Compute differential outcomes compared to reference category
-df_out_inf_all_summ$max_Inftot_ref <- df_out_inf_all_summ$max_Inftot - 
-  df_out_inf_all_summ$max_Inftot[df_out_inf_all_summ$ref_category == 1]
-df_out_inf_all_summ$max_Inftot_time_ref <- df_out_inf_all_summ$max_Inftot_time - 
-  df_out_inf_all_summ$max_Inftot_time[df_out_inf_all_summ$ref_category == 1]
-df_out_inf_all_summ$CumInfTot_ref <- df_out_inf_all_summ$CumInfTot - 
-  df_out_inf_all_summ$CumInfTot[df_out_inf_all_summ$ref_category == 1]
+## Calculate  differential outcomes compared to reference category (Group by parameter set)
+# Create a data.frame with only reference category (ie, hhsize = 1, #e =1, #i = 1)
+df_out_inf_all_summ_ref <- df_out_inf_all_summ %>%
+  filter(ref_category == 1) %>%
+  rename(max_Inftot_ref = max_Inftot,
+         max_Inftot_time_ref = max_Inftot_time,
+         CumInfTot_ref = CumInfTot) %>%
+  select(r_beta, r_tau, r_omega, 
+         max_Inftot_ref, max_Inftot_time_ref, CumInfTot_ref)
+# Compute differential outcomes compared to reference category (Group by parameter set)
+df_out_inf_all_summ <- df_out_inf_all_summ %>%
+  left_join(df_out_inf_all_summ_ref) %>%
+  mutate(max_Inftot_diff = max_Inftot - max_Inftot_ref,
+         max_Inftot_time_diff = max_Inftot_time - max_Inftot_time_ref,
+         CumInfTot_diff = CumInfTot - CumInfTot_ref,
+         # Percentage changes
+         max_Inftot_diff_perc = (max_Inftot_diff/max_Inftot_ref)*100,
+         max_Inftot_time_diff_perc = (max_Inftot_time_diff/max_Inftot_time_ref)*100,
+         CumInfTot_diff_perc = (CumInfTot_diff/CumInfTot_ref)*100)
+
 
 # hist(df_out_inf_all_summ$max_Inftot)
 # hist(df_out_inf_all_summ$max_Inftot_time)
@@ -130,7 +143,30 @@ stargazer(fit_hh_int_peak_date, fit_hh_int_peak, fit_hh_int_size,
           out = "tables/03-metaregression_nathist_interactions_appendix.tex")
 
 
-### Meta regression on outcomes comparing to reference category
+### Meta regression on outcomes comparing to reference category 
+## Without interactions
+fit_hh_peak_date_diff <- lm(max_Inftot_time_diff ~ n_exp_states + 
+                                   n_inf_states + 
+                                   n_hhsize + 
+                                   r_tau + r_beta + r_omega, 
+                                 data = df_out_inf_all_summ)
+summary(fit_hh_peak_date_diff)
+
+fit_hh_peak_diff <- lm(max_Inftot_diff ~ n_exp_states + n_inf_states + 
+                              n_hhsize*r_beta + 
+                              r_tau + r_beta + r_omega,
+                            data = df_out_inf_all_summ)
+summary(fit_hh_peak_diff)
+
+fit_hh_size_diff_perc <- lm(CumInfTot_diff_perc ~ n_exp_states + n_inf_states +
+                              n_hhsize + r_tau + r_beta + r_omega, 
+                            data = df_out_inf_all_summ)
+summary(fit_hh_size_diff_perc)
+
+stargazer(fit_hh_peak_date, fit_hh_peak, fit_hh_size, 
+          type = "text", out = "tables/03-metaregression_nathist_nointeractions.txt")
+stargazer(fit_hh_peak_date, fit_hh_peak, fit_hh_size, 
+          type = "latex", out = "tables/03-metaregression_nathist_nointeractions.tex")
 
 ### Visualization
 ## Epidemic curves
@@ -179,6 +215,61 @@ ggsave(plot = gg_epidemic_curve_nathist,
        filename = "figs/03_household_communiy_MC_SEIR_NATHIST_epidemic_curve.pdf.jpeg", 
        width = 12, height = 8)
 
+## Epidemic measures vs reference category (ie, hhsize = 1, #e = 1, #i = 1)
+ggplot(df_out_inf_all_summ %>%
+         filter(r_beta == 0.25 & r_tau == 0.50 & 
+                  r_omega == 0.000 & time <= 60 & 
+                  n_hhsize < 7 &
+                  level_npi == 1.0), 
+       aes(x = `Household size`, 
+           y = max_Inftot_diff_perc, 
+           color = `Household size`)) + 
+  geom_point() + 
+  ylab("Percent difference in maximum number of infections") + 
+  facet_grid(Esize ~ Isize) +
+  theme(legend.position = "")
+ggplot(df_out_inf_all_summ %>%
+         filter(r_beta == 0.25 & r_tau == 0.50 & 
+                  r_omega == 0.000 & time <= 60 & 
+                  n_hhsize < 7 &
+                  level_npi == 1.0), 
+       aes(x = `Household size`, 
+           y = max_Inftot_time_diff, 
+           color = `Household size`)) + 
+  geom_point() + 
+  ylab("Difference in timing of maximum number of infections") + 
+  facet_grid(Esize ~ Isize) +
+  theme(legend.position = "")
+ggplot(df_out_inf_all_summ %>%
+         filter(r_beta == 0.25 & r_tau == 0.50 & 
+                  r_omega == 0.000 & time <= 60 & 
+                  n_hhsize < 7 &
+                  level_npi == 1.0), 
+       aes(x = `Household size`, 
+           y = CumInfTot_diff, 
+           color = `Household size`)) + 
+  geom_point() + 
+  ylab("Difference in total infections") + 
+  facet_grid(Esize ~ Isize) +
+  theme(legend.position = "")
+
+
+# Outcomes by r_beta values.
+
+ggplot(df_out_inf_all_summ %>%
+         filter(r_tau == 0.40 & # r_beta == 0.25 & 
+                r_omega == 0.000 & time <= 60 & 
+                n_hhsize < 7 &
+                level_npi == 1.0), 
+       aes(x = `Household size`, 
+           y = max_Inftot_diff_perc, 
+           color = as.factor(r_beta))) + 
+  geom_point() + 
+  ylab("Percent difference in maximum number of infections") + 
+  guides(color = guide_legend(title = "r_beta")) + 
+  facet_grid(Esize ~ Isize) 
+  # theme(legend.position = "")
+
 #### Control measure (vaccination and NPI) outputs ####
 # Load data ----
 load(file = "output/df_output_doe_mc_seirv_all_control.RData")
@@ -197,11 +288,13 @@ df_out_inf_all$`Multicompartment structure` <- paste0("E=",
                                                       df_out_inf_all$n_inf_states)
 
 # Summarize output ----
-df_out_inf_all_summ <- df_out_inf_all %>%
-  group_by(pid) %>%
+df_out_inf_all_control_summ <- df_out_inf_all %>%
+  group_by(pid) %>% # ,  n_exp_states, n_inf_states
   mutate(# Find the t at which I(t) is at its max
-    ref_category = ifelse(n_hhsize == 1 & n_exp_states == 1 & n_inf_states ==1, 
-                          1, 0), # Define HH=1, E=1, I=1 as reference category
+    ref_category = ifelse(n_hhsize == 1, 
+                          1, 0), # Define HH=1 as reference category
+    ref_category_nathist = ifelse(level_npi == 1 & vax_prop == 0 & eff_vax == 1.0, 
+                                  1, 0), # Natural history as reference category to estimate control measures' effectiveness on other parameters
     max_Inftot = max(Inftot),
     max_Inftot_time = time[which.max(Inftot)],
     # Find times at which I(t) is at a percentage of its max
@@ -213,16 +306,42 @@ df_out_inf_all_summ <- df_out_inf_all %>%
     IDX500_time = max(time[which((Inftot-InfNoDX) <= 500 & time < max_Inftot_time)]),
     IDX100_time = max(time[which((Inftot-InfNoDX) <= 100 & time < max_Inftot_time)]),
     CumInfTot = sum(Inftot)) %>%
+  # arrange(-ref_category_nathist) %>%
   slice_head() %>%
   ungroup()
 
+## Calculate  differential outcomes compared to reference category (Group by parameter set)
+# Create a data.frame with only reference category (ie, hhsize = 1)
+df_out_inf_all_control_summ_nathist <- df_out_inf_all_control_summ %>%
+  filter(ref_category_nathist == 1) %>%
+  rename(max_Inftot_nathist = max_Inftot,
+         max_Inftot_time_nathist = max_Inftot_time,
+         CumInfTot_nathist = CumInfTot) %>%
+  select(n_hhsize, n_exp_states, n_inf_states,
+         r_beta, r_tau, r_omega, 
+         max_Inftot_nathist, max_Inftot_time_nathist, CumInfTot_nathist)
+
+# Compute differential outcomes compared to reference category (Group by parameter set)
+df_out_inf_all_control_summ <- df_out_inf_all_control_summ %>%
+  left_join(df_out_inf_all_control_summ_nathist) %>%
+  mutate(max_Inftot_diff = max_Inftot - max_Inftot_nathist,
+         max_Inftot_time_diff = max_Inftot_time - max_Inftot_time_nathist,
+         CumInfTot_diff = CumInfTot - CumInfTot_nathist,
+         # Percentage changes
+         max_Inftot_diff_perc = (max_Inftot_diff/max_Inftot_nathist)*100,
+         max_Inftot_time_diff_perc = (max_Inftot_time_diff/max_Inftot_time_nathist)*100,
+         CumInfTot_diff_perc = (CumInfTot_diff/CumInfTot_nathist)*100)
+
+
+
+
 ## Compute differential outcomes compared to reference category
-df_out_inf_all_summ$max_Inftot_ref <- df_out_inf_all_summ$max_Inftot - 
-  df_out_inf_all_summ$max_Inftot[df_out_inf_all_summ$ref_category==1]
-df_out_inf_all_summ$max_Inftot_time_ref <- df_out_inf_all_summ$max_Inftot_time - 
-  df_out_inf_all_summ$max_Inftot_time[df_out_inf_all_summ$ref_category==1]
-df_out_inf_all_summ$CumInfTot_ref <- df_out_inf_all_summ$CumInfTot - 
-  df_out_inf_all_summ$CumInfTot[df_out_inf_all_summ$ref_category==1]
+# df_out_inf_all_summ$max_Inftot_ref <- df_out_inf_all_summ$max_Inftot - 
+#   df_out_inf_all_summ$max_Inftot[df_out_inf_all_summ$ref_category==1]
+# df_out_inf_all_summ$max_Inftot_time_ref <- df_out_inf_all_summ$max_Inftot_time - 
+#   df_out_inf_all_summ$max_Inftot_time[df_out_inf_all_summ$ref_category==1]
+# df_out_inf_all_summ$CumInfTot_ref <- df_out_inf_all_summ$CumInfTot - 
+#   df_out_inf_all_summ$CumInfTot[df_out_inf_all_summ$ref_category==1]
 
 
 # Visualization ----
@@ -266,23 +385,23 @@ ggplot(df_out_inf_all %>%
         legend.margin = margin(0, 0, 0, 0),
         legend.box.margin=margin(-10,-10,-10,-10))
 
-ggplot(df_out_inf_all_summ %>% 
+ggplot(df_out_inf_all_control_summ %>% 
          filter(r_beta == 0.25 & r_tau == 0.40 & r_omega == 0.000 & time <= 70 & 
-                  n_exp_states == 3 & n_inf_states == 3 & n_hhsize %in% c(1, 3, 5) & 
+                  n_hhsize %in% c(1, 3, 5) &
                   eff_vax %in% c(0.9)), 
-       aes(x = `Household size`, y = CumInfTot, fill = `Household size`)) + # linetype = as.factor(eff_vax))
-  geom_col(color = NA) +
+       aes(x = `Household size`, y = max_Inftot_diff_perc, color = `Multicompartment structure`)) + # linetype = as.factor(eff_vax))
+  geom_point() +
   facet_grid(NPIeff ~ PropVax) +
-  scale_y_continuous(labels = function(x)round(x/10e6, digits = 2)) +
+  # scale_y_continuous(labels = function(x)round(x/10e6, digits = 2)) +
   # scale_fill_viridis_d(option = "C", direction = -1) +
   # scale_color_jcolors(palette = "rainbow") +
   # scale_fill_brewer(palette = "Spectral") +
   # xlab("Household size") +
-  ylab("Cumulative infections (millions)") +
+  # ylab("Cumulative infections (millions)") +
   theme_bw(base_size = 16) +
   theme(strip.background = element_rect(colour="white", fill="white"),
         strip.text = element_text(hjust = 0, face = "bold", size = 12),
-        legend.position = c(""),
+        # legend.position = c(""),
         # legend.position = c(.88,.8),
         # legend.position = "bottom",
         # legend.margin = margin(0, 0, 0, 0),
