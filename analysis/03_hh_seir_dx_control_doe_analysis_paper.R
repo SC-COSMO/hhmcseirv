@@ -8,6 +8,8 @@ library(dplyr)
 library(ggplot2)
 library(patchwork)
 library(stargazer)
+# install.packages("remotes")
+remotes::install_github("coolbutuseless/ggpattern")
 source("R/02_decision_model_functions.R")
 
 ### Define color palette ----
@@ -63,7 +65,7 @@ df_out_inf_all_summ <- df_out_inf_all %>%
   ungroup()
 
 ## Calculate  differential outcomes compared to reference category (Group by parameter set)
-# Create a data.frame with only reference category (ie, hhsize = 1, #e =1, #i = 1)
+# Create a data.frame with only reference category (ie, hhsize = 1)
 df_out_inf_all_summ_ref <- df_out_inf_all_summ %>%
   filter(ref_category == 1) %>%
   rename(max_Inftot_ref = max_Inftot,
@@ -81,7 +83,6 @@ df_out_inf_all_summ <- df_out_inf_all_summ %>%
          max_Inftot_diff_perc = (max_Inftot_diff/max_Inftot_ref)*100,
          max_Inftot_time_diff_perc = (max_Inftot_time_diff/max_Inftot_time_ref)*100,
          CumInfTot_diff_perc = (CumInfTot_diff/CumInfTot_ref)*100)
-
 
 # hist(df_out_inf_all_summ$max_Inftot)
 # hist(df_out_inf_all_summ$max_Inftot_time)
@@ -293,6 +294,8 @@ df_out_inf_all_control_summ <- df_out_inf_all %>%
   mutate(# Find the t at which I(t) is at its max
     ref_category = ifelse(n_hhsize == 1, 
                           1, 0), # Define HH=1 as reference category
+    ref_category_bias = ifelse(n_hhsize == 1 & n_exp_states == 1 & n_inf_states == 1.0, 
+                               1, 0), # n_hhsize = 1, E = 1, I =1 as reference category to estimate bias of control measures' effect
     ref_category_nathist = ifelse(level_npi == 1 & vax_prop == 0 & eff_vax == 1.0, 
                                   1, 0), # Natural history as reference category to estimate control measures' effectiveness on other parameters
     max_Inftot = max(Inftot),
@@ -332,7 +335,30 @@ df_out_inf_all_control_summ <- df_out_inf_all_control_summ %>%
          max_Inftot_time_diff_perc = (max_Inftot_time_diff/max_Inftot_time_nathist)*100,
          CumInfTot_diff_perc = (CumInfTot_diff/CumInfTot_nathist)*100)
 
+## Calculate bias for all models compared bias to reference category (Group by parameter set)
+# Create a data.frame with only reference category (ie, hhsize = 1, e =1, i = 1)
+df_out_inf_all_control_summ_ref_bias <- df_out_inf_all_control_summ %>%
+  filter(ref_category_bias == 1) %>%
+  rename(max_Inftot_diff_ref_bias = max_Inftot_diff,
+         max_Inftot_time_diff_ref_bias = max_Inftot_time_diff,
+         CumInfTot_diff_ref_bias = CumInfTot_diff) %>%
+  select(r_beta, r_tau, r_omega, 
+         max_Inftot_diff_ref_bias, 
+         max_Inftot_time_diff_ref_bias, 
+         CumInfTot_diff_ref_bias, vax_prop, 
+         level_npi, eff_vax)
 
+# Compute bias in differential outcomes compared to bia reference category (Group by parameter set)
+df_out_inf_all_control_summ <- df_out_inf_all_control_summ %>%
+  left_join(df_out_inf_all_control_summ_ref_bias) %>%
+  mutate(# Absolute bias
+         max_Inftot_diff_bias_abs = max_Inftot_diff_ref_bias - max_Inftot_diff,
+         max_Inftot_time_diff_bias_abs = max_Inftot_time_diff_ref_bias - max_Inftot_time_diff,
+         CumInfTot_diff_bias_abs = CumInfTot_diff_ref_bias - CumInfTot_diff,
+         # Relative bias
+         max_Inftot_diff_bias_rel = 100 * max_Inftot_diff_bias_abs/max_Inftot_diff,
+         max_Inftot_time_diff_bias_rel = 100 * max_Inftot_time_diff_bias_abs/max_Inftot_time_diff,
+         CumInfTot_diff_bias_rel = 100 * CumInfTot_diff_bias_abs/CumInfTot_diff)
 
 
 ## Compute differential outcomes compared to reference category
@@ -385,6 +411,8 @@ ggplot(df_out_inf_all %>%
 #         legend.margin = margin(0, 0, 0, 0),
 #         legend.box.margin=margin(-10,-10,-10,-10))
 
+#### Differential effect on control measures' effects
+
 ggplot(df_out_inf_all_control_summ %>% 
          filter(r_beta == 0.25 & r_tau == 0.40 & r_omega == 0.020 & time <= 70 & 
                   n_hhsize %in% c(1, 3, 5) &
@@ -392,8 +420,8 @@ ggplot(df_out_inf_all_control_summ %>%
        aes(x = `Household size`, y = -max_Inftot_diff, 
            group = Isize, color = Isize, fill = Esize)) + # linetype = as.factor(eff_vax))
   geom_bar(stat = "identity", position = position_dodge(0.8)) +
-  # facet_grid(NPIeff ~ Esize) +
-  facet_wrap(NPIeff ~ Esize, scales = "free") +
+  facet_grid(NPIeff ~ Esize) +
+  # facet_wrap(NPIeff ~ Esize, scales = "free") +
   scale_fill_grey() +
   # scale_y_continuous(labels = function(x)round(x/10e6, digits = 2)) +
   # scale_fill_viridis_d(option = "C", direction = -1) +
@@ -426,6 +454,94 @@ ggplot(df_out_inf_all_control_summ %>%
 # - add computation time
 # - Add Incident infections equation and capture that on the output
 # HH vs non-HH transmission.
+
+
+#### Differential effect on control measures' effects BIAS
+### Maximum infections
+ggplot(df_out_inf_all_control_summ %>% 
+         filter(r_beta == 0.25 & r_tau == 0.40 & r_omega == 0.000 & time <= 70 & 
+                  n_hhsize %in% c(1, 3, 5) &
+                  eff_vax %in% c(1.0) & vax_prop == 0.0, level_npi != 1), 
+       aes(x = `Household size`, y = max_Inftot_diff_bias_rel, 
+           group = Isize, color = Isize, fill = Esize)) + # linetype = as.factor(eff_vax))
+  geom_bar(stat = "identity", position = position_dodge(0.8)) +
+  facet_grid(NPIeff ~ Esize) +
+  # facet_wrap(NPIeff ~ Esize, scales = "free") +
+  scale_fill_grey() +
+  # scale_y_continuous(labels = function(x)round(x/10e6, digits = 2)) +
+  # scale_fill_viridis_d(option = "C", direction = -1) +
+  # scale_color_jcolors(palette = "rainbow") +
+  # scale_fill_brewer(palette = "Spectral") +
+  # xlab("Household size") +
+  # ylab("Cumulative infections (millions)") +
+  theme_bw(base_size = 16) +
+  # coord_flip() +
+  theme(strip.background = element_rect(colour="white", fill="white"),
+        strip.text = element_text(hjust = 0, face = "bold", size = 12),
+        # legend.position = c(""),
+        # legend.position = c(.88,.8),
+        # legend.position = "bottom",
+        # legend.margin = margin(0, 0, 0, 0),
+        # legend.box.margin=margin(-10,-10,-10,-10)
+        legend.key = element_blank())
+
+### Time of maximum infections
+ggplot(df_out_inf_all_control_summ %>% 
+         filter(r_beta == 0.25 & r_tau == 0.40 & r_omega == 0.000 & time <= 70 & 
+                  n_hhsize %in% c(1, 3, 5) &
+                  eff_vax %in% c(1.0) & vax_prop == 0.0, level_npi != 1), 
+       aes(x = `Household size`, y = max_Inftot_time_diff_bias_rel, 
+           group = Isize, color = Isize, fill = Esize)) + # linetype = as.factor(eff_vax))
+  geom_bar(stat = "identity", position = position_dodge(0.8)) +
+  facet_grid(NPIeff ~ Esize) +
+  # facet_wrap(NPIeff ~ Esize, scales = "free") +
+  scale_fill_grey() +
+  # scale_y_continuous(labels = function(x)round(x/10e6, digits = 2)) +
+  # scale_fill_viridis_d(option = "C", direction = -1) +
+  # scale_color_jcolors(palette = "rainbow") +
+  # scale_fill_brewer(palette = "Spectral") +
+  # xlab("Household size") +
+  # ylab("Cumulative infections (millions)") +
+  theme_bw(base_size = 16) +
+  # coord_flip() +
+  theme(strip.background = element_rect(colour="white", fill="white"),
+        strip.text = element_text(hjust = 0, face = "bold", size = 12),
+        # legend.position = c(""),
+        # legend.position = c(.88,.8),
+        # legend.position = "bottom",
+        # legend.margin = margin(0, 0, 0, 0),
+        # legend.box.margin=margin(-10,-10,-10,-10)
+        legend.key = element_blank())
+
+### Cummulative number of prevalent infections
+ggplot(df_out_inf_all_control_summ %>% 
+         filter(r_beta == 0.25 & r_tau == 0.40 & r_omega == 0.000 & time <= 70 & 
+                  n_hhsize %in% c(1, 3, 5) &
+                  eff_vax %in% c(1.0) & vax_prop == 0.0, level_npi != 1), 
+       aes(x = `Household size`, y = CumInfTot_diff_bias_rel, 
+           group = Isize, color = Isize, fill = Esize)) + # linetype = as.factor(eff_vax))
+  geom_bar(stat = "identity", position = position_dodge(0.8)) +
+  facet_grid(NPIeff ~ Esize) +
+  # facet_wrap(NPIeff ~ Esize, scales = "free") +
+  scale_fill_grey() +
+  # scale_y_continuous(labels = function(x)round(x/10e6, digits = 2)) +
+  # scale_fill_viridis_d(option = "C", direction = -1) +
+  # scale_color_jcolors(palette = "rainbow") +
+  # scale_fill_brewer(palette = "Spectral") +
+  # xlab("Household size") +
+  # ylab("Cumulative infections (millions)") +
+  theme_bw(base_size = 16) +
+  # coord_flip() +
+  theme(strip.background = element_rect(colour="white", fill="white"),
+        strip.text = element_text(hjust = 0, face = "bold", size = 12),
+        # legend.position = c(""),
+        # legend.position = c(.88,.8),
+        # legend.position = "bottom",
+        # legend.margin = margin(0, 0, 0, 0),
+        # legend.box.margin=margin(-10,-10,-10,-10)
+        legend.key = element_blank())
+
+
 
 df_params_naming <- expand.grid(r_beta  = unique(df_out_inf_all$r_beta),
                                 r_tau   = unique(df_out_inf_all$r_tau),
