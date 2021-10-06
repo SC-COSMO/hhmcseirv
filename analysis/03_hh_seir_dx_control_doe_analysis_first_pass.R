@@ -27,15 +27,15 @@ color_map_mod       <- jet.colors_mod(120)
 color_map           <- jet.colors(120)
 
 
-#### Natural history outputs ####
-# Load data ----
+# Natural history outputs ----
+## Load data ----
 load(file = "output/df_output_doe_mc_seirv_all_nathist.RData")
 
-# Rename variables for pretty plotting format ----
+## Rename variables for pretty plotting format ----
 df_out_inf_all$Esize <- paste0("# of E compartments = ", df_out_inf_all$n_exp_states)
 df_out_inf_all$Isize <- paste0("# of I compartments = ", df_out_inf_all$n_inf_states)
 df_out_inf_all$`Household size` <- ordered(df_out_inf_all$n_hhsize, unique(df_out_inf_all$n_hhsize))
-# df_out_inf_all$n_hhsize <- ordered(df_out_inf_all$n_hhsize)
+## df_out_inf_all$n_hhsize <- ordered(df_out_inf_all$n_hhsize)
 df_out_inf_all$`Vaccine effectiveness` <- scales::percent(df_out_inf_all$eff_vax)
 df_out_inf_all$PropVax <- paste0("Proportion vaccinated = ", scales::percent(df_out_inf_all$vax_prop))
 df_out_inf_all$NPIeff <- paste0("NPI effectiveness = ", scales::percent(1-df_out_inf_all$level_npi))
@@ -44,7 +44,7 @@ df_out_inf_all$`Multicompartment structure` <- paste0("E=",
                                                       ", I=", 
                                                       df_out_inf_all$n_inf_states)
 
-# Summarize output ----
+## Summarize output ----
 df_out_inf_all_summ <- df_out_inf_all %>%
   group_by(pid) %>%
   mutate(# Find the t at which I(t) is at its max
@@ -111,6 +111,9 @@ fit_hh_size <- lm(log(CumInfTot) ~ n_exp_states + n_inf_states +
                     n_hhsize + r_tau + r_beta + r_omega, 
                   data = df_out_inf_all_summ)
 summary(fit_hh_size)
+
+stargazer(fit_hh_peak_date, fit_hh_peak, fit_hh_size, 
+          type = "text")
 
 stargazer(fit_hh_peak_date, fit_hh_peak, fit_hh_size, 
           type = "text", out = "tables/03-metaregression_nathist_nointeractions.txt")
@@ -271,11 +274,13 @@ ggplot(df_out_inf_all_summ %>%
   facet_grid(Esize ~ Isize) 
   # theme(legend.position = "")
 
-#### Control measure (vaccination and NPI) outputs ####
-# Load data ----
+# Control measure (vaccination and NPI) outputs ----
+
+## Load data ----
 load(file = "output/df_output_doe_mc_seirv_all_control.RData")
 
-# Rename variables for pretty plotting format ----
+## Wrangle data ----
+# Rename variables for pretty plotting format
 df_out_inf_all$Esize <- paste0("# of E compartments = ", df_out_inf_all$n_exp_states)
 df_out_inf_all$Isize <- paste0("# of I compartments = ", df_out_inf_all$n_inf_states)
 df_out_inf_all$`Household size` <- ordered(df_out_inf_all$n_hhsize, unique(df_out_inf_all$n_hhsize))
@@ -288,7 +293,7 @@ df_out_inf_all$`Multicompartment structure` <- paste0("E=",
                                                       ", I=", 
                                                       df_out_inf_all$n_inf_states)
 
-# Summarize output ----
+## Summarize output ----
 df_out_inf_all_control_summ <- df_out_inf_all %>%
   group_by(pid) %>% # ,  n_exp_states, n_inf_states
   mutate(# Find the t at which I(t) is at its max
@@ -383,7 +388,7 @@ df_out_inf_all %>%
 
 ggplot(df_out_inf_all %>% 
          filter(r_beta == 0.25 & r_tau == 0.40 & r_omega == 0.020 & time <= 70 & level_npi == 1), 
-       aes(x = time, y = Inftot, color = n_hhsize)) +
+       aes(x = time, y = Inftot, color = `Household size`)) +
   geom_line(size = 1.3) +
   facet_grid(Esize ~ Isize) +
   theme_bw(base_size = 16) +
@@ -412,7 +417,7 @@ ggplot(df_out_inf_all %>%
 #         legend.box.margin=margin(-10,-10,-10,-10))
 
 #### Differential effect on control measures' effects
-
+## TO-DO: https://stackoverflow.com/questions/28853786/how-do-i-plot-charts-with-nested-categories-axes/28868462#28868462
 ggplot(df_out_inf_all_control_summ %>% 
          filter(r_beta == 0.25 & r_tau == 0.40 & r_omega == 0.020 & time <= 70 & 
                   n_hhsize %in% c(1, 3, 5) &
@@ -513,7 +518,7 @@ ggplot(df_out_inf_all_control_summ %>%
         # legend.box.margin=margin(-10,-10,-10,-10)
         legend.key = element_blank())
 
-### Cummulative number of prevalent infections
+### Cumulative number of prevalent infections
 ggplot(df_out_inf_all_control_summ %>% 
          filter(r_beta == 0.25 & r_tau == 0.40 & r_omega == 0.000 & time <= 70 & 
                   n_hhsize %in% c(1, 3, 5) &
