@@ -560,7 +560,7 @@ stargazer(fit_hh_peak_time_bias_rel,
           fit_hh_epidemic_size, 
           type = "text")
 
-## Meta regression on category-specific outcomes and abosulute value of the relative bias----
+## Meta regression on category-specific outcomes and absolute value of the relative bias----
 df_control_measures_bias <- df_out_inf_all_control_summ %>% 
   filter(r_omega == 0.000 & 
            !((`Multicompartment structure` %in% c("E=1, I=1") & n_hhsize %in% c(1))) & 
@@ -570,7 +570,8 @@ df_control_measures_bias <- df_out_inf_all_control_summ %>%
 fit_hh_peak_time_bias_rel_abs <- lm(abs(max_Inftot_time_diff_bias_rel) ~ n_exp_states + n_inf_states + 
                                   n_hhsize + 
                                   r_tau + r_beta , 
-                                data = df_control_measures_bias %>% filter(max_Inftot_time_diff_bias_rel != Inf))
+                                data = df_control_measures_bias %>% 
+                                  filter(max_Inftot_time_diff_bias_rel != Inf))
 summary(fit_hh_peak_time_bias_rel_abs)
 
 fit_hh_peak_size_bias_rel_abs <- lm(abs(max_Inftot_diff_bias_rel) ~ n_exp_states + n_inf_states + 

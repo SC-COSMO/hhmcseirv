@@ -10,6 +10,7 @@ library(ggpubr)
 library(pBrackets)
 library(patchwork)
 library(stargazer)
+library(grid)
 # install.packages("remotes")
 # remotes::install_github("coolbutuseless/ggpattern")
 # library(ggpattern) # https://coolbutuseless.github.io/2020/04/01/introducing-ggpattern-pattern-fills-for-ggplot/
@@ -380,3 +381,211 @@ grid.text(x = unit(100, "native"), y = unit(500, "native"),
                               ), 
           hjust = 0, vjust=0)
 dev.off()
+
+### Figure 4: Differential effect on control measures' effects BIAS ----
+alphas <- c("# of I compartments = 1" = 0.4, 
+            "# of I compartments = 2" = 0.7, 
+            "# of I compartments = 3" = 1.0)
+#### Maximum infections ----
+gg_peak_size_bias_rel <- ggplot(df_out_inf_all_control_summ %>% 
+                                  filter(r_beta == 0.25 & r_tau == 0.40 & r_omega == 0.000 & time <= 70 & 
+                                           n_hhsize %in% c(1, 3, 5) &
+                                           eff_vax %in% c(1.0) & vax_prop == 0.0, level_npi != 1), 
+                                aes(x = `Household size`, y = max_Inftot_diff_bias_rel, 
+                                    group = Isize, alpha = Isize, fill = Esize)) + # linetype = as.factor(eff_vax))
+  geom_bar(stat = "identity", position = position_dodge(0.8)) +
+  facet_grid(NPIeff ~ Esize) +
+  scale_fill_discrete(l = 50) +
+  scale_alpha_manual(values = alphas) +
+  ylab("Relative bias on peak size (%)") +
+  theme_bw(base_size = 16) +
+  theme(strip.background = element_rect(colour="white", fill="white"),
+        strip.text = element_text(hjust = 0, face = "bold", size = 12),
+        legend.position = c(.79, .86),
+        legend.title = element_blank(),
+        legend.background = element_blank(),
+        legend.key = element_blank())
+gg_peak_size_bias_rel
+ggsave(plot = gg_peak_size_bias_rel, 
+       filename = "figs/Paper/Fig4_control_measures_peak_size_bias_rel.pdf", 
+       width = 12, height = 8)
+ggsave(plot = gg_peak_size_bias_rel, 
+       filename = "figs/Paper/Fig4_control_measures_peak_size_bias_rel.png", 
+       width = 12, height = 8)
+ggsave(plot = gg_peak_size_bias_rel, 
+       filename = "figs/Paper/Fig4_control_measures_peak_size_bias_rel.jpeg", 
+       width = 12, height = 8)
+
+gg_peak_size_bias_abs <- ggplot(df_out_inf_all_control_summ %>% 
+                                  filter(r_beta == 0.25 & r_tau == 0.40 & r_omega == 0.000 & time <= 70 & 
+                                           n_hhsize %in% c(1, 3, 5) &
+                                           eff_vax %in% c(1.0) & vax_prop == 0.0, level_npi != 1), 
+                                aes(x = `Household size`, y = max_Inftot_diff_bias_abs, 
+                                    group = Isize, alpha = Isize, fill = Esize)) + # linetype = as.factor(eff_vax))
+  geom_bar(stat = "identity", position = position_dodge(0.8)) +
+  facet_grid(NPIeff ~ Esize) +
+  scale_fill_discrete(l = 50) +
+  scale_alpha_manual(values = alphas) +
+  ylab("Relative bias on peak size (%)") +
+  theme_bw(base_size = 16) +
+  theme(strip.background = element_rect(colour="white", fill="white"),
+        strip.text = element_text(hjust = 0, face = "bold", size = 12),
+        legend.position = c(.79, .86),
+        legend.title = element_blank(),
+        legend.background = element_blank(),
+        legend.key = element_blank())
+gg_peak_size_bias_abs
+
+### Time of maximum infections
+gg_peak_time_bias_rel <- ggplot(df_out_inf_all_control_summ %>% 
+                                  filter(r_beta == 0.25 & r_tau == 0.40 & r_omega == 0.000 & time <= 70 & 
+                                           n_hhsize %in% c(1, 3, 5) &
+                                           eff_vax %in% c(1.0) & vax_prop == 0.0, level_npi != 1) %>%
+                                  # Remove Inf values
+                                  mutate(max_Inftot_time_diff_bias_rel = ifelse(is.infinite(max_Inftot_time_diff_bias_rel), 
+                                                                                NaN, 
+                                                                                max_Inftot_time_diff_bias_rel)), 
+                                aes(x = `Household size`, y = max_Inftot_time_diff_bias_rel, 
+                                    group = Isize, alpha = Isize, fill = Esize)) + # linetype = as.factor(eff_vax))
+  geom_bar(stat = "identity", position = position_dodge(0.8)) +
+  facet_grid(NPIeff ~ Esize) +
+  scale_fill_discrete(l = 50) +
+  scale_alpha_manual(values = alphas) +
+  # xlab("Household size") +
+  scale_y_continuous("Relative bias on peak time (%)", 
+                     breaks = c(0, 250, 500, 750, 1000, 1250), 
+                     labels = function(x) scales::comma(x)) +
+  theme_bw(base_size = 16) +
+  theme(strip.background = element_rect(colour="white", fill="white"),
+        strip.text = element_text(hjust = 0, face = "bold", size = 12),
+        legend.position = c(.79, .86),
+        legend.title = element_blank(),
+        legend.background = element_blank(),
+        legend.key = element_blank())
+gg_peak_time_bias_rel
+# ggsave(plot = gg_peak_time_bias_rel, 
+#        filename = "figs/SMDM_2021/SMDM_hh_MC_SEIR_control_measures_peak_time_bias_rel.pdf", 
+#        width = 12, height = 8)
+# ggsave(plot = gg_peak_time_bias_rel, 
+#        filename = "figs/SMDM_2021/SMDM_hh_MC_SEIR_control_measures_peak_time_bias_rel.png", 
+#        width = 12, height = 8)
+# ggsave(plot = gg_peak_time_bias_rel, 
+#        filename = "figs/SMDM_2021/SMDM_hh_MC_SEIR_control_measures_peak_time_bias_rel.jpeg", 
+#        width = 12, height = 8)
+
+gg_peak_time_bias_abs <- ggplot(df_out_inf_all_control_summ %>% 
+                                  filter(r_beta == 0.25 & r_tau == 0.40 & r_omega == 0.000 & time <= 70 & 
+                                           n_hhsize %in% c(1, 3, 5) &
+                                           eff_vax %in% c(1.0) & vax_prop == 0.0, level_npi != 1), 
+                                aes(x = `Household size`, y = max_Inftot_time_diff_bias_abs, 
+                                    group = Isize, alpha = Isize, fill = Esize)) + # linetype = as.factor(eff_vax))
+  geom_bar(stat = "identity", position = position_dodge(0.8)) +
+  facet_grid(NPIeff ~ Esize) +
+  scale_fill_discrete(l = 50) +
+  scale_alpha_manual(values = alphas) +
+  # xlab("Household size") +
+  scale_y_continuous("Absolute bias on peak time (days)", 
+                     # breaks = c(0, 250, 500, 750, 1000, 1250), 
+                     labels = function(x) scales::comma(x)) +
+  theme_bw(base_size = 16) +
+  theme(strip.background = element_rect(colour="white", fill="white"),
+        strip.text = element_text(hjust = 0, face = "bold", size = 12),
+        legend.position = c(.79, .86),
+        legend.title = element_blank(),
+        legend.background = element_blank(),
+        legend.key = element_blank())
+gg_peak_time_bias_abs
+
+### Cumulative number of prevalent infections
+gg_epidemic_size_bias_rel <- ggplot(df_out_inf_all_control_summ %>% 
+                                      filter(r_beta == 0.25 & r_tau == 0.40 & r_omega == 0.000 & time <= 70 & 
+                                               n_hhsize %in% c(1, 3, 5) &
+                                               eff_vax %in% c(1.0) & vax_prop == 0.0, level_npi != 1), 
+                                    aes(x = `Household size`, y = CumInfTot_diff_bias_rel, 
+                                        group = Isize, alpha = Isize, fill = Esize)) + # linetype = as.factor(eff_vax))
+  geom_bar(stat = "identity", position = position_dodge(0.8)) +
+  facet_grid(NPIeff ~ Esize) +
+  scale_fill_discrete(l = 50) +
+  scale_alpha_manual(values = alphas) +
+  # xlab("Household size") +
+  scale_y_continuous("Relative bias on epidemic size (%)", 
+                     breaks = seq(0, 700, by = 100), 
+                     labels = function(x) scales::comma(x)) +
+  theme_bw(base_size = 16) +
+  theme(strip.background = element_rect(colour="white", fill="white"),
+        strip.text = element_text(hjust = 0, face = "bold", size = 12),
+        legend.position = c(.79, .86),
+        legend.title = element_blank(),
+        legend.background = element_blank(),
+        legend.key = element_blank())
+gg_epidemic_size_bias_rel
+# ggsave(plot = gg_epidemic_size_bias_rel, 
+#        filename = "figs/SMDM_2021/SMDM_hh_MC_SEIR_control_measures_epidemic_size_bias_rel.pdf", 
+#        width = 12, height = 8)
+# ggsave(plot = gg_epidemic_size_bias_rel, 
+#        filename = "figs/SMDM_2021/SMDM_hh_MC_SEIR_control_measures_epidemic_size_bias_rel.png", 
+#        width = 12, height = 8)
+# ggsave(plot = gg_epidemic_size_bias_rel, 
+#        filename = "figs/SMDM_2021/SMDM_hh_MC_SEIR_control_measures_epidemic_size_bias_rel.jpeg", 
+#        width = 12, height = 8)
+
+### Table 3: Meta regression on category-specific outcomes on Control Measures ----
+df_control_measures_bias <- df_out_inf_all_control_summ %>% 
+  filter(r_omega == 0.000 & 
+           !((`Multicompartment structure` %in% c("E=1, I=1") & n_hhsize %in% c(1))) & 
+           eff_vax %in% c(1.0) & vax_prop == 0.0, level_npi %in% c(0.4)) 
+
+## Without interactions
+fit_hh_peak_time_bias_rel <- lm(max_Inftot_time_diff_bias_rel ~ n_exp_states + n_inf_states + 
+                                  n_hhsize + 
+                                  r_tau + r_beta, 
+                                data = df_control_measures_bias %>% 
+                                  filter(max_Inftot_time_diff_bias_rel != Inf))
+summary(fit_hh_peak_time_bias_rel)
+
+fit_hh_peak_size_bias_rel <- lm(max_Inftot_diff_bias_rel ~ n_exp_states + n_inf_states + 
+                                  n_hhsize + 
+                                  r_tau + r_beta,
+                                data = df_control_measures_bias)
+summary(fit_hh_peak_size_bias_rel)
+
+fit_hh_epidemic_size_rel <- lm(CumInfTot_diff_bias_rel ~ n_exp_states + n_inf_states + 
+                             n_hhsize + r_tau + r_beta, 
+                           data = df_control_measures_bias)
+summary(fit_hh_epidemic_size_rel)
+## With interactions
+fit_hh_peak_time_bias_rel_int <- lm(max_Inftot_time_diff_bias_rel ~ n_exp_states*n_inf_states + 
+                             n_exp_states*n_hhsize + 
+                             n_inf_states*n_hhsize + 
+                             r_tau + r_beta, 
+                           data = df_control_measures_bias %>% 
+                             filter(max_Inftot_time_diff_bias_rel != Inf))
+summary(fit_hh_peak_time_bias_rel_int)
+
+fit_hh_peak_size_bias_rel_int <- lm(max_Inftot_diff_bias_rel ~ n_exp_states*n_inf_states + 
+                        n_exp_states*n_hhsize + 
+                        n_inf_states*n_hhsize +
+                        r_tau + r_beta,
+                      data = df_control_measures_bias)
+summary(fit_hh_peak_size_bias_rel_int)
+
+fit_hh_epidemic_size_rel_int <- lm(CumInfTot_diff_bias_rel ~ n_exp_states*n_inf_states + 
+                        n_exp_states*n_hhsize + 
+                        n_inf_states*n_hhsize + 
+                        r_tau + r_beta, 
+                      data = df_control_measures_bias)
+summary(fit_hh_epidemic_size_rel_int)
+
+stargazer(fit_hh_peak_time_bias_rel, fit_hh_peak_time_bias_rel_int,
+          fit_hh_peak_size_bias_rel, fit_hh_peak_size_bias_rel_int,
+          fit_hh_epidemic_size_rel, fit_hh_epidemic_size_rel_int,
+          type = "text", 
+          title = "Metaregression estimates",
+          column.labels = c("Peak time", "Peak size", "Epidemic size"), 
+          column.separate = c(2, 2, 2), 
+          dep.var.caption = "", 
+          dep.var.labels.include = FALSE, 
+          covariate.labels = c("E", "I", "Household size (HH)", "$\\tau$", "$\\beta$", "E*I", "E*HH", "I*HH"), # 
+          model.numbers = FALSE,
+          omit.stat = c("all"), report = c("vc*"),
+          align = TRUE)
