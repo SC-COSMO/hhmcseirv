@@ -11,6 +11,7 @@ library(pBrackets)
 library(patchwork)
 library(stargazer)
 library(grid)
+library(png)
 # install.packages("remotes")
 # remotes::install_github("coolbutuseless/ggpattern")
 # library(ggpattern) # https://coolbutuseless.github.io/2020/04/01/introducing-ggpattern-pattern-fills-for-ggplot/
@@ -170,6 +171,10 @@ gg_epidemic_curve_nathist_E1_I1_E3_I3 <- ggplot(df_fig2,
         legend.text = element_text(size = 12),
         legend.key = element_blank())
 gg_epidemic_curve_nathist_E1_I1_E3_I3
+
+ggsave(plot = gg_epidemic_curve_nathist_E1_I1_E3_I3, 
+       filename = "figs/Paper/Fig2_natural_history_curves.pdf", 
+       width = 12, height = 8)
 
 ### Table 2: Meta regression on category-specific outcomes on Natural History ----
 ## Without interactions
@@ -331,8 +336,9 @@ df_control_measures_E1_I1_E3_I3 <- df_out_inf_all_control_summ %>%
 df_control_measures_E1_I1_E3_I3 %>% 
   select(`Multicompartment structure`, n_hhsize, level_npi, max_Inftot)
 
-### Figure 3:  ----
-pdf(file = "figs/Paper/Fig3_exemplary_bias.pdf", width = 10, height = 8)
+
+### Figure 3: Differential effect on control measures' effects BIAS ----
+png(file = "figs/Paper/Fig3_exemplary_bias.png", width = 960, height = 960*0.8)
 gg_control_measures_E1_I1_E3_I3 <- ggplot(df_control_measures_E1_I1_E3_I3,
                                           aes(x = `Natural history structure`, y = max_Inftot,
                                               group = NPIeff, fill = NPIeff_labels)) +
@@ -377,12 +383,11 @@ grid.text(x = unit(100, "native"), y = unit(500, "native"),
           label =  expression(paste("rBias = ", 
                                     frac(paste(Delta, O[NH]) - paste(Delta, O[HH]), 
                                          paste(Delta, O[HH])
-                                         )%*%100, " = 30%")
-                              ), 
+                                    )%*%100, " = 30%")
+          ), 
           hjust = 0, vjust=0)
 dev.off()
 
-### Figure 4: Differential effect on control measures' effects BIAS ----
 alphas <- c("# of I compartments = 1" = 0.4, 
             "# of I compartments = 2" = 0.7, 
             "# of I compartments = 3" = 1.0)
@@ -398,10 +403,10 @@ gg_peak_size_bias_rel <- ggplot(df_out_inf_all_control_summ %>%
   scale_fill_discrete(l = 50) +
   scale_alpha_manual(values = alphas) +
   ylab("Relative bias on peak size (%)") +
-  theme_bw(base_size = 16) +
+  theme_bw(base_size = 20) +
   theme(strip.background = element_rect(colour="white", fill="white"),
         strip.text = element_text(hjust = 0, face = "bold", size = 12),
-        legend.position = c(.79, .86),
+        legend.position = c(.84, .86),
         legend.title = element_blank(),
         legend.background = element_blank(),
         legend.key = element_blank())
@@ -416,6 +421,22 @@ ggsave(plot = gg_peak_size_bias_rel,
        filename = "figs/Paper/Fig4_control_measures_peak_size_bias_rel.jpeg", 
        width = 12, height = 8)
 
+my_png <- readPNG(source = "figs/Paper/Fig3_exemplary_bias.png", native = TRUE)
+gg_exemplary_bias <- ggplot() + 
+  background_image(raster.img = my_png)
+gg_exemplary_bias
+
+fig3 <- ggarrange(gg_exemplary_bias, gg_peak_size_bias_rel,
+          labels = c("A)", "B)"),
+          ncol = 2, nrow = 1,
+          hjust = 0, vjust = 1.5,
+          font.label=list(color = "black", size = 16))
+
+ggsave(plot = fig3, 
+       filename = "figs/Paper/Fig3.pdf", 
+       width = 24, height = 10)
+
+### Appendix figures: Differential effect on control measures' effects BIAS ----
 gg_peak_size_bias_abs <- ggplot(df_out_inf_all_control_summ %>% 
                                   filter(r_beta == 0.25 & r_tau == 0.40 & r_omega == 0.000 & time <= 70 & 
                                            n_hhsize %in% c(1, 3, 5) &
