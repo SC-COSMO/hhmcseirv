@@ -676,7 +676,7 @@ max_Inftot_time_NPI_E1_I1 <- df_out_inf_all_control_summ %>%
 
 max_Inftot_time_NPI_E1_I1$max_Inftot <- max_Inftot_time_NPI_E1_I1$max_Inftot/10e6
 
-df_fig3 <- left_join(df_out_inf_all %>% 
+df_figA1 <- left_join(df_out_inf_all %>% 
                        filter(r_beta == 0.25 & r_tau == 0.50 & 
                                 r_omega == 0.000 & time <= 60 & 
                                 `Multicompartment structure` %in% c("E=1, I=1", 
@@ -688,7 +688,7 @@ df_fig3 <- left_join(df_out_inf_all %>%
                                 vax_prop == 0 & 
                                 level_npi %in% c(0.4)),
                      max_Inftot_time_NPI_E1_I1)
-gg_epidemic_curve_NPI_E1_I1_E3_I3 <- ggplot(df_fig3, 
+gg_epidemic_curve_NPI_E1_I1_E3_I3 <- ggplot(df_figA1, 
                                             aes(x = time, y = Inftot/10e6, color = `Household size`)) + # 
   geom_line(size = 1.1) +
   geom_segment(aes(x = max_Inftot_time_NPI_E1_I1_hh1$max_Inftot_time, 
