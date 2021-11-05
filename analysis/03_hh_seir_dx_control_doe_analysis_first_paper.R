@@ -163,7 +163,7 @@ gg_epidemic_curve_nathist_E1_I1_E3_I3 <- ggplot(df_fig2,
   theme(strip.background = element_rect(colour="white", fill="white"),
         strip.text = element_text(hjust = 0, face = "bold", size = 12),
         # legend.position = c(""),
-        legend.position = c(0.85, 0.80),
+        legend.position = c(0.85, 0.90),
         # legend.position = "bottom",
         # legend.margin = margin(0, 0, 0, 0),
         # legend.box.margin=margin(-10,-10,-10,-10)
@@ -401,10 +401,10 @@ grid.text(x = unit(100, "native"), y = unit(500, "native"),
           hjust = 0, vjust=0)
 dev.off()
 
+#### Maximum infections ----
 alphas <- c("# of I compartments = 1" = 0.4, 
             "# of I compartments = 2" = 0.7, 
             "# of I compartments = 3" = 1.0)
-#### Maximum infections ----
 gg_peak_size_bias_rel <- ggplot(df_out_inf_all_control_summ %>% 
                                   filter(r_beta == 0.25 & r_tau == 0.40 & r_omega == 0.000 & time <= 70 & 
                                            n_hhsize %in% c(1, 3, 5) &
@@ -624,32 +624,47 @@ stargazer(fit_hh_peak_time_bias_rel, fit_hh_peak_time_bias_rel_int,
           omit.stat = c("all"), report = c("vc*"),
           align = TRUE)
 
+stargazer(fit_hh_peak_time_bias_rel, fit_hh_peak_time_bias_rel_int,
+          fit_hh_peak_size_bias_rel, fit_hh_peak_size_bias_rel_int,
+          fit_hh_epidemic_size_rel, fit_hh_epidemic_size_rel_int,
+          type = "latex", 
+          out = "output/Table3_metaregression_bias.tex", 
+          title = "Metaregression estimates",
+          column.labels = c("Peak time", "Peak size", "Epidemic size"), 
+          column.separate = c(2, 2, 2), 
+          dep.var.caption = "", 
+          dep.var.labels.include = FALSE, 
+          covariate.labels = c("E", "I", "Household size (HH)", "$\\tau$", "$\\beta$", "E*I", "E*HH", "I*HH"), # 
+          model.numbers = FALSE,
+          omit.stat = c("all"), report = c("vc*"),
+          align = TRUE)
+
 
 ### Appendix Figures ----
 #### Appendix Figure 1 ----
-max_Inftot_time_NPI_E1_I1_hh1 <- df_out_inf_all_control_summ %>% 
+max_Inftot_time_NPI20_E1_I1_hh1 <- df_out_inf_all_control_summ %>% 
   filter(r_beta == 0.25 & r_tau == 0.50 & 
            r_omega == 0.000 & time <= 70 & 
            `Multicompartment structure` %in% c("E=1, I=1") & 
            n_hhsize %in% 1 & 
            eff_vax == 1 & 
            vax_prop == 0 & 
-           level_npi %in% c(0.4)) %>%
+           level_npi %in% c(0.8)) %>%
   select(max_Inftot_time, max_Inftot)
-max_Inftot_time_NPI_E1_I1_hh1$max_Inftot <- max_Inftot_time_NPI_E1_I1_hh1$max_Inftot/10e6
+max_Inftot_time_NPI20_E1_I1_hh1$max_Inftot <- max_Inftot_time_NPI20_E1_I1_hh1$max_Inftot/10e6
 
-max_Inftot_time_NPI_E1_I1_hh3 <- df_out_inf_all_control_summ %>% 
+max_Inftot_time_NPI20_E1_I1_hh3 <- df_out_inf_all_control_summ %>% 
   filter(r_beta == 0.25 & r_tau == 0.50 & 
            r_omega == 0.000 & time <= 70 & 
            `Multicompartment structure` %in% c("E=1, I=1") & 
            n_hhsize %in% 3 & 
            eff_vax == 1 & 
            vax_prop == 0 & 
-           level_npi %in% c(0.4)) %>%
+           level_npi %in% c(0.8)) %>%
   select(max_Inftot_time, max_Inftot)
-max_Inftot_time_NPI_E1_I1_hh3$max_Inftot <- max_Inftot_time_NPI_E1_I1_hh3$max_Inftot/10e6
+max_Inftot_time_NPI20_E1_I1_hh3$max_Inftot <- max_Inftot_time_NPI20_E1_I1_hh3$max_Inftot/10e6
 
-max_Inftot_time_NPI_E1_I1 <- df_out_inf_all_control_summ %>% 
+max_Inftot_time_NPI20_E1_I1 <- df_out_inf_all_control_summ %>% 
   filter(r_beta == 0.25 & r_tau == 0.50 & 
            r_omega == 0.000 & time <= 70 & 
            `Multicompartment structure` %in% c("E=1, I=1", 
@@ -659,11 +674,11 @@ max_Inftot_time_NPI_E1_I1 <- df_out_inf_all_control_summ %>%
            n_hhsize %in% c(1, 3) & 
            eff_vax == 1 & 
            vax_prop == 0 & 
-           level_npi %in% c(0.4)) %>%
-  mutate(x0 = c(rep(max_Inftot_time_NPI_E1_I1_hh1$max_Inftot_time, 4),
-                rep(max_Inftot_time_NPI_E1_I1_hh3$max_Inftot_time, 4))) %>% 
-  mutate(y0 = c(rep(max_Inftot_time_NPI_E1_I1_hh1$max_Inftot, 4),
-                rep(max_Inftot_time_NPI_E1_I1_hh3$max_Inftot, 4))) %>% 
+           level_npi %in% c(0.8)) %>%
+  mutate(x0 = c(rep(max_Inftot_time_NPI20_E1_I1_hh1$max_Inftot_time, 4),
+                rep(max_Inftot_time_NPI20_E1_I1_hh3$max_Inftot_time, 4))) %>% 
+  mutate(y0 = c(rep(max_Inftot_time_NPI20_E1_I1_hh1$max_Inftot, 4),
+                rep(max_Inftot_time_NPI20_E1_I1_hh3$max_Inftot, 4))) %>% 
   mutate(origin = (x0 == max_Inftot_time),
          x0 = ifelse(origin, NA, x0),
          y0 = ifelse(origin, NA, y0)) %>%
@@ -674,38 +689,38 @@ max_Inftot_time_NPI_E1_I1 <- df_out_inf_all_control_summ %>%
          origin,
          x0, y0)
 
-max_Inftot_time_NPI_E1_I1$max_Inftot <- max_Inftot_time_NPI_E1_I1$max_Inftot/10e6
+max_Inftot_time_NPI20_E1_I1$max_Inftot <- max_Inftot_time_NPI20_E1_I1$max_Inftot/10e6
 
 df_figA1 <- left_join(df_out_inf_all %>% 
-                       filter(r_beta == 0.25 & r_tau == 0.50 & 
-                                r_omega == 0.000 & time <= 60 & 
-                                `Multicompartment structure` %in% c("E=1, I=1", 
-                                                                    "E=3, I=3", 
-                                                                    "E=3, I=1", 
-                                                                    "E=1, I=3") & 
-                                n_hhsize %in% c(1, 3) & 
-                                eff_vax == 1 & 
-                                vax_prop == 0 & 
-                                level_npi %in% c(0.4)),
-                     max_Inftot_time_NPI_E1_I1)
-gg_epidemic_curve_NPI_E1_I1_E3_I3 <- ggplot(df_figA1, 
-                                            aes(x = time, y = Inftot/10e6, color = `Household size`)) + # 
+                        filter(r_beta == 0.25 & r_tau == 0.50 & 
+                                 r_omega == 0.000 & time <= 60 & 
+                                 `Multicompartment structure` %in% c("E=1, I=1", 
+                                                                     "E=3, I=3", 
+                                                                     "E=3, I=1", 
+                                                                     "E=1, I=3") & 
+                                 n_hhsize %in% c(1, 3) & 
+                                 eff_vax == 1 & 
+                                 vax_prop == 0 & 
+                                 level_npi %in% c(0.8)),
+                      max_Inftot_time_NPI20_E1_I1)
+gg_epidemic_curve_NPI20_E1_I1_E3_I3 <- ggplot(df_figA1, 
+                                              aes(x = time, y = Inftot/10e6, color = `Household size`)) + # 
   geom_line(size = 1.1) +
-  geom_segment(aes(x = max_Inftot_time_NPI_E1_I1_hh1$max_Inftot_time, 
-                   xend = max_Inftot_time_NPI_E1_I1_hh1$max_Inftot_time, 
+  geom_segment(aes(x = max_Inftot_time_NPI20_E1_I1_hh1$max_Inftot_time, 
+                   xend = max_Inftot_time_NPI20_E1_I1_hh1$max_Inftot_time, 
                    y = 0, 
-                   yend = max_Inftot_time_NPI_E1_I1_hh1$max_Inftot),
+                   yend = max_Inftot_time_NPI20_E1_I1_hh1$max_Inftot),
                linetype = "dashed", color = "blue") +
-  geom_segment(aes(x = max_Inftot_time_NPI_E1_I1_hh3$max_Inftot_time, 
-                   xend = max_Inftot_time_NPI_E1_I1_hh3$max_Inftot_time, 
+  geom_segment(aes(x = max_Inftot_time_NPI20_E1_I1_hh3$max_Inftot_time, 
+                   xend = max_Inftot_time_NPI20_E1_I1_hh3$max_Inftot_time, 
                    y = 0, 
-                   yend = max_Inftot_time_NPI_E1_I1_hh3$max_Inftot),
+                   yend = max_Inftot_time_NPI20_E1_I1_hh3$max_Inftot),
                linetype = "dashed", color = "red") +
-  geom_point(aes(x = max_Inftot_time_NPI_E1_I1_hh1$max_Inftot_time, 
-                 y = max_Inftot_time_NPI_E1_I1_hh1$max_Inftot),
+  geom_point(aes(x = max_Inftot_time_NPI20_E1_I1_hh1$max_Inftot_time, 
+                 y = max_Inftot_time_NPI20_E1_I1_hh1$max_Inftot),
              color = "blue", size = 2.5) +
-  geom_point(aes(x = max_Inftot_time_NPI_E1_I1_hh3$max_Inftot_time, 
-                 y = max_Inftot_time_NPI_E1_I1_hh3$max_Inftot),
+  geom_point(aes(x = max_Inftot_time_NPI20_E1_I1_hh3$max_Inftot_time, 
+                 y = max_Inftot_time_NPI20_E1_I1_hh3$max_Inftot),
              color = "red", size = 2.5) +
   geom_segment(aes(x = x0, xend = max_Inftot_time,
                    y = y0, yend = max_Inftot,
@@ -728,11 +743,129 @@ gg_epidemic_curve_NPI_E1_I1_E3_I3 <- ggplot(df_figA1,
   theme(strip.background = element_rect(colour="white", fill="white"),
         strip.text = element_text(hjust = 0, face = "bold", size = 12),
         # legend.position = c(""),
-        legend.position = c(0.85, 0.80),
+        legend.position = c(0.85, 0.90),
         # legend.position = "bottom",
         # legend.margin = margin(0, 0, 0, 0),
         # legend.box.margin=margin(-10,-10,-10,-10)
         legend.title = element_text(size = 12), 
         legend.text = element_text(size = 12),
         legend.key = element_blank())
-gg_epidemic_curve_NPI_E1_I1_E3_I3
+gg_epidemic_curve_NPI20_E1_I1_E3_I3
+ggsave(plot = gg_epidemic_curve_NPI20_E1_I1_E3_I3, 
+       filename = "figs/Paper/FigA1_NPI20_curves.pdf", 
+       width = 12, height = 8)
+
+
+#### Appendix Figure 2 ----
+max_Inftot_time_NPI60_E1_I1_hh1 <- df_out_inf_all_control_summ %>% 
+  filter(r_beta == 0.25 & r_tau == 0.50 & 
+           r_omega == 0.000 & time <= 70 & 
+           `Multicompartment structure` %in% c("E=1, I=1") & 
+           n_hhsize %in% 1 & 
+           eff_vax == 1 & 
+           vax_prop == 0 & 
+           level_npi %in% c(0.4)) %>%
+  select(max_Inftot_time, max_Inftot)
+max_Inftot_time_NPI60_E1_I1_hh1$max_Inftot <- max_Inftot_time_NPI60_E1_I1_hh1$max_Inftot/10e6
+
+max_Inftot_time_NPI60_E1_I1_hh3 <- df_out_inf_all_control_summ %>% 
+  filter(r_beta == 0.25 & r_tau == 0.50 & 
+           r_omega == 0.000 & time <= 70 & 
+           `Multicompartment structure` %in% c("E=1, I=1") & 
+           n_hhsize %in% 3 & 
+           eff_vax == 1 & 
+           vax_prop == 0 & 
+           level_npi %in% c(0.4)) %>%
+  select(max_Inftot_time, max_Inftot)
+max_Inftot_time_NPI60_E1_I1_hh3$max_Inftot <- max_Inftot_time_NPI60_E1_I1_hh3$max_Inftot/10e6
+
+max_Inftot_time_NPI60_E1_I1 <- df_out_inf_all_control_summ %>% 
+  filter(r_beta == 0.25 & r_tau == 0.50 & 
+           r_omega == 0.000 & time <= 70 & 
+           `Multicompartment structure` %in% c("E=1, I=1", 
+                                               "E=3, I=3", 
+                                               "E=3, I=1", 
+                                               "E=1, I=3") & 
+           n_hhsize %in% c(1, 3) & 
+           eff_vax == 1 & 
+           vax_prop == 0 & 
+           level_npi %in% c(0.4)) %>%
+  mutate(x0 = c(rep(max_Inftot_time_NPI60_E1_I1_hh1$max_Inftot_time, 4),
+                rep(max_Inftot_time_NPI60_E1_I1_hh3$max_Inftot_time, 4))) %>% 
+  mutate(y0 = c(rep(max_Inftot_time_NPI60_E1_I1_hh1$max_Inftot, 4),
+                rep(max_Inftot_time_NPI60_E1_I1_hh3$max_Inftot, 4))) %>% 
+  mutate(origin = (x0 == max_Inftot_time),
+         x0 = ifelse(origin, NA, x0),
+         y0 = ifelse(origin, NA, y0)) %>%
+  select(`Household size`,
+         `Multicompartment structure`, 
+         max_Inftot_time, 
+         max_Inftot,
+         origin,
+         x0, y0)
+
+max_Inftot_time_NPI60_E1_I1$max_Inftot <- max_Inftot_time_NPI60_E1_I1$max_Inftot/10e6
+
+df_figA2 <- left_join(df_out_inf_all %>% 
+                        filter(r_beta == 0.25 & r_tau == 0.50 & 
+                                 r_omega == 0.000 & time <= 60 & 
+                                 `Multicompartment structure` %in% c("E=1, I=1", 
+                                                                     "E=3, I=3", 
+                                                                     "E=3, I=1", 
+                                                                     "E=1, I=3") & 
+                                 n_hhsize %in% c(1, 3) & 
+                                 eff_vax == 1 & 
+                                 vax_prop == 0 & 
+                                 level_npi %in% c(0.4)),
+                      max_Inftot_time_NPI60_E1_I1)
+gg_epidemic_curve_NPI60_E1_I1_E3_I3 <- ggplot(df_figA2, 
+                                              aes(x = time, y = Inftot/10e6, color = `Household size`)) + # 
+  geom_line(size = 1.1) +
+  geom_segment(aes(x = max_Inftot_time_NPI60_E1_I1_hh1$max_Inftot_time, 
+                   xend = max_Inftot_time_NPI60_E1_I1_hh1$max_Inftot_time, 
+                   y = 0, 
+                   yend = max_Inftot_time_NPI60_E1_I1_hh1$max_Inftot),
+               linetype = "dashed", color = "blue") +
+  geom_segment(aes(x = max_Inftot_time_NPI60_E1_I1_hh3$max_Inftot_time, 
+                   xend = max_Inftot_time_NPI60_E1_I1_hh3$max_Inftot_time, 
+                   y = 0, 
+                   yend = max_Inftot_time_NPI60_E1_I1_hh3$max_Inftot),
+               linetype = "dashed", color = "red") +
+  geom_point(aes(x = max_Inftot_time_NPI60_E1_I1_hh1$max_Inftot_time, 
+                 y = max_Inftot_time_NPI60_E1_I1_hh1$max_Inftot),
+             color = "blue", size = 2.5) +
+  geom_point(aes(x = max_Inftot_time_NPI60_E1_I1_hh3$max_Inftot_time, 
+                 y = max_Inftot_time_NPI60_E1_I1_hh3$max_Inftot),
+             color = "red", size = 2.5) +
+  geom_segment(aes(x = x0, xend = max_Inftot_time,
+                   y = y0, yend = max_Inftot,
+                   color = `Household size`),
+               linejoin = "mitre",
+               linetype = "dashed", arrow = arrow(length = unit(0.15, "inches"),
+                                                  type = "closed"), 
+               show.legend = FALSE) +
+  # geom_vline(xintercept = as.numeric(max_Inftot_time_E1_I1_hh1), linetype = "dashed", color = "blue") +
+  # geom_vline(xintercept = as.numeric(max_Inftot_time_E1_I1_hh3), linetype = "dashed", color = "red") +
+  facet_grid(Esize ~ Isize) +
+  scale_y_continuous(labels = function(x) scales::percent(x, accuracy = 1.0), limits = c(0, 0.06)) +
+  # scale_color_grey(start = 0.2, end = 0.6) +
+  scale_color_manual(values = c("1" = "blue", "3" = "red")) +
+  xlab("Time") +
+  ylab("Infected population (% of total population)") +
+  guides(color = guide_legend(nrow = 2), 
+         linetype = guide_legend(nrow = 1)) +
+  theme_bw(base_size = 20) +
+  theme(strip.background = element_rect(colour="white", fill="white"),
+        strip.text = element_text(hjust = 0, face = "bold", size = 12),
+        # legend.position = c(""),
+        legend.position = c(0.85, 0.90),
+        # legend.position = "bottom",
+        # legend.margin = margin(0, 0, 0, 0),
+        # legend.box.margin=margin(-10,-10,-10,-10)
+        legend.title = element_text(size = 12), 
+        legend.text = element_text(size = 12),
+        legend.key = element_blank())
+gg_epidemic_curve_NPI60_E1_I1_E3_I3
+ggsave(plot = gg_epidemic_curve_NPI60_E1_I1_E3_I3, 
+       filename = "figs/Paper/FigA2_NPI60_curves.pdf", 
+       width = 12, height = 8)
