@@ -64,6 +64,12 @@ df_out_inf_all_summ <- df_out_inf_all %>%
   slice_head() %>%
   ungroup()
 
+# Results to include on the Interventions section of the paper
+quantile(((df_out_inf_all %>%
+  filter(time == 10)) %>%
+    mutate(xxx = Inftot-InfNoDX))$xxx, probs = c(0.250, 0.750))/10
+
+
 ## Calculate  differential outcomes compared to reference category (Group by parameter set)
 # Create a data.frame with only reference category (ie, hhsize = 1)
 df_out_inf_all_summ_ref <- df_out_inf_all_summ %>%

@@ -244,6 +244,7 @@ stargazer(fit_hh_peak_date, fit_hh_peak_date_int,
           model.numbers = FALSE,
           omit.stat = c("all"), report = c("vc*"),
           align = TRUE) 
+
 # Control measure outputs ----
 ## Load data ----
 load(file = "output/df_output_doe_mc_seirv_all_control.RData")
@@ -253,9 +254,11 @@ load(file = "output/df_output_doe_mc_seirv_all_control.RData")
 df_out_inf_all$Esize <- paste0("# of E compartments = ", df_out_inf_all$n_exp_states)
 df_out_inf_all$Isize <- paste0("# of I compartments = ", df_out_inf_all$n_inf_states)
 df_out_inf_all$`Household size` <- ordered(df_out_inf_all$n_hhsize, unique(df_out_inf_all$n_hhsize))
+df_out_inf_all$`Household size labels` <- paste0("Household size = ", df_out_inf_all$n_hhsize)
 # df_out_inf_all$n_hhsize <- ordered(df_out_inf_all$n_hhsize)
 df_out_inf_all$`Vaccine effectiveness` <- scales::percent(df_out_inf_all$eff_vax)
 df_out_inf_all$PropVax <- paste0("Proportion vaccinated = ", scales::percent(df_out_inf_all$vax_prop))
+df_out_inf_all$EffVax  <- paste0("Vaccine effectiveness = ", scales::percent(df_out_inf_all$eff_vax))
 df_out_inf_all$NPIeff <- paste0("NPI effectiveness = ", scales::percent(1-df_out_inf_all$level_npi))
 df_out_inf_all$NPIeff_labels <- ordered(df_out_inf_all$NPIeff,
                                         unique(df_out_inf_all$NPIeff), c("No NPI", "NPI20", "NPI"))
@@ -563,7 +566,7 @@ gg_epidemic_size_bias_rel
 #        filename = "figs/SMDM_2021/SMDM_hh_MC_SEIR_control_measures_epidemic_size_bias_rel.jpeg", 
 #        width = 12, height = 8)
 
-### Table 3: Meta regression on category-specific outcomes on Control Measures ----
+### Table 3: Meta regression on category-specific outcomes on Control Measures NPI 60% reduction ----
 df_control_measures_bias <- df_out_inf_all_control_summ %>% 
   filter(r_omega == 0.000 & 
            !((`Multicompartment structure` %in% c("E=1, I=1") & n_hhsize %in% c(1))) & 
@@ -869,3 +872,526 @@ gg_epidemic_curve_NPI60_E1_I1_E3_I3
 ggsave(plot = gg_epidemic_curve_NPI60_E1_I1_E3_I3, 
        filename = "figs/Paper/FigA2_NPI60_curves.pdf", 
        width = 12, height = 8)
+
+#### Appendix Figure 3 ----
+df_epi_curve_vax_E1_I1 <- df_out_inf_all %>% 
+  filter(r_beta == 0.25 & r_tau == 0.50 & 
+           r_omega == 0.000 & 
+           `Multicompartment structure` %in% c("E=1, I=1"
+                                               # "E=3, I=3", 
+                                               # "E=3, I=1", 
+                                               # "E=1, I=3"
+           ) & 
+           n_hhsize %in% c(1, 3) & 
+           eff_vax %in% c(0.5, 0.9) & 
+           vax_prop %in% c(0, 0.3, 0.9) & 
+           level_npi %in% c(1.0))
+gg_epidemic_curve_vax_E1_I1 <- ggplot(df_epi_curve_vax_E1_I1, 
+                                      aes(x = time, y = Inftot/10e6*100, 
+                                          color = as.factor(vax_prop*100))
+                                      # linetype = as.factor(vax_prop))
+) + # 
+  geom_line(size = 1.1) +
+  # geom_vline(xintercept = as.numeric(max_Inftot_time_E1_I1_hh1), linetype = "dashed", color = "blue") +
+  # geom_vline(xintercept = as.numeric(max_Inftot_time_E1_I1_hh3), linetype = "dashed", color = "red") +
+  geom_vline(xintercept = 10, linetype = "dashed", color = "black") +
+  facet_grid(EffVax ~ `Household size labels`) +
+  # scale_color_grey(start = 0.2, end = 0.6) +
+  # scale_color_manual(values = c("1" = "blue", "3" = "red")) +
+  # scale_y_continuous(trans = "log") +
+  xlim(0, 70) +
+  xlab("Time") +
+  ylab("Infected population (% of total population)") +
+  guides(color = guide_legend(title = "Vaccine coverage (%)",
+                              nrow = 3), 
+         linetype = guide_legend(title = "Vaccine coverage (%)",
+                                 nrow = 1)) +
+  theme_bw(base_size = 20) +
+  theme(strip.background = element_rect(colour="white", fill="white"),
+        strip.text = element_text(hjust = 0, face = "bold", size = 12),
+        # legend.position = c(""),
+        legend.position = c(0.85, 0.90),
+        # legend.position = "bottom",
+        # legend.margin = margin(0, 0, 0, 0),
+        # legend.box.margin=margin(-10,-10,-10,-10)
+        legend.title = element_text(size = 12), 
+        legend.text = element_text(size = 12),
+        legend.key = element_blank())
+gg_epidemic_curve_vax_E1_I1
+ggsave(plot = gg_epidemic_curve_vax_E1_I1, 
+       filename = "figs/Paper/FigA3_epi_curves_vax_E1_I1.pdf", 
+       width = 12, height = 8)
+
+#### Appendix Figure 4 ----
+df_epi_curve_vax_E3_I3 <- df_out_inf_all %>% 
+  filter(r_beta == 0.25 & r_tau == 0.50 & 
+           r_omega == 0.000 & 
+           `Multicompartment structure` %in% c(# "E=1, I=1",
+             "E=3, I=3" 
+             # "E=3, I=1", 
+             # "E=1, I=3"
+           ) & 
+           n_hhsize %in% c(1, 3) & 
+           eff_vax %in% c(0.5, 0.9) & 
+           vax_prop %in% c(0, 0.3, 0.9) & 
+           level_npi %in% c(1.0))
+gg_epidemic_curve_vax_E3_I3 <- ggplot(df_epi_curve_vax_E3_I3, 
+                                      aes(x = time, y = Inftot/10e6*100, 
+                                          color = as.factor(vax_prop*100))
+                                      # linetype = as.factor(vax_prop))
+) + # 
+  geom_line(size = 1.1) +
+  # geom_vline(xintercept = as.numeric(max_Inftot_time_E1_I1_hh1), linetype = "dashed", color = "blue") +
+  # geom_vline(xintercept = as.numeric(max_Inftot_time_E1_I1_hh3), linetype = "dashed", color = "red") +
+  geom_vline(xintercept = 10, linetype = "dashed", color = "black") +
+  facet_grid(EffVax ~ `Household size labels`) +
+  # scale_color_grey(start = 0.2, end = 0.6) +
+  # scale_color_manual(values = c("1" = "blue", "3" = "red")) +
+  # scale_y_continuous(trans = "log") +
+  xlim(0, 70) +
+  xlab("Time") +
+  ylab("Infected population (% of total population)") +
+  guides(color = guide_legend(title = "Vaccine coverage (%)",
+                              nrow = 3), 
+         linetype = guide_legend(title = "Vaccine coverage (%)",
+                                 nrow = 1)) +
+  theme_bw(base_size = 20) +
+  theme(strip.background = element_rect(colour="white", fill="white"),
+        strip.text = element_text(hjust = 0, face = "bold", size = 12),
+        # legend.position = c(""),
+        legend.position = c(0.85, 0.90),
+        # legend.position = "bottom",
+        # legend.margin = margin(0, 0, 0, 0),
+        # legend.box.margin=margin(-10,-10,-10,-10)
+        legend.title = element_text(size = 12), 
+        legend.text = element_text(size = 12),
+        legend.key = element_blank())
+gg_epidemic_curve_vax_E3_I3
+ggsave(plot = gg_epidemic_curve_vax_E3_I3, 
+       filename = "figs/Paper/FigA4_epi_curves_vax_E3_I3.pdf", 
+       width = 12, height = 8)
+
+#### Appendix Figure 5 ----
+df_control_measures_bias_vax <- df_out_inf_all_control_summ %>% 
+  filter(r_beta == 0.25 & r_tau == 0.50 & 
+           r_omega == 0.000 & 
+           `Multicompartment structure` %in% c("E=1, I=1",
+                                               "E=3, I=3",
+                                               "E=3, I=1",
+                                               "E=1, I=3"
+           ) & 
+           n_hhsize %in% c(1, 3, 5) & 
+           eff_vax %in% c(0.5, 0.9) & 
+           vax_prop %in% c(0.3, 0.9) & 
+           level_npi %in% c(1.0))
+gg_control_measures_bias_vax_CumInfTot_diff_bias_rel <- ggplot(df_control_measures_bias_vax, 
+                                                               aes(x = `Household size`, 
+                                                                   fill = PropVax,
+                                                                   y = CumInfTot_diff_bias_rel)) +
+  geom_col(width = 0.5, position = position_dodge(0.5)) +
+  facet_grid(`EffVax` ~ `Multicompartment structure`) +
+  scale_y_continuous("Relative bias (%)") +
+  theme_bw(base_size = 20) +
+  theme(legend.position = "bottom", 
+        legend.title = element_blank())
+gg_control_measures_bias_vax_CumInfTot_diff_bias_rel
+ggsave(plot = gg_control_measures_bias_vax_CumInfTot_diff_bias_rel, 
+       filename = "figs/Paper/FigA5_control_measures_bias_vax_CumInfTot_diff_bias_rel.pdf", 
+       width = 12, height = 9)
+
+#### Appendix Figure 6 ----
+gg_control_measures_bias_vax_MaxInfTot_diff_bias_rel <- ggplot(df_control_measures_bias_vax, 
+                                                               aes(x = `Household size`, 
+                                                                   fill = PropVax,
+                                                                   y = max_Inftot_diff_bias_rel)) +
+  geom_col(width = 0.5, position = position_dodge(0.5)) +
+  facet_grid(`EffVax` ~ `Multicompartment structure`) +
+  scale_y_continuous("Relative bias (%)", limits = c(-100, 100)) +
+  theme_bw(base_size = 20) +
+  theme(legend.position = "bottom", 
+        legend.title = element_blank())
+gg_control_measures_bias_vax_MaxInfTot_diff_bias_rel
+ggsave(plot = gg_control_measures_bias_vax_MaxInfTot_diff_bias_rel, 
+       filename = "figs/Paper/FigA6_control_measures_bias_vax_MaxInfTot_diff_bias_rel.pdf", 
+       width = 12, height = 9)
+
+### Appendix Tables ----
+### Table 3: Meta regression on category-specific outcomes on Control Measures NPI 60% reduction ----
+df_control_measures_bias <- df_out_inf_all_control_summ %>% 
+  filter(r_omega == 0.000 & 
+           !((`Multicompartment structure` %in% c("E=1, I=1") & n_hhsize %in% c(1))) & 
+           eff_vax %in% c(1.0) & vax_prop == 0.0, level_npi %in% c(0.8)) 
+
+## Without interactions
+fit_hh_peak_time_bias_rel <- lm(max_Inftot_time_diff_bias_rel ~ n_exp_states + n_inf_states + 
+                                  n_hhsize + 
+                                  r_tau + r_beta, 
+                                data = df_control_measures_bias %>% 
+                                  filter(max_Inftot_time_diff_bias_rel != Inf))
+summary(fit_hh_peak_time_bias_rel)
+
+fit_hh_peak_size_bias_rel <- lm(max_Inftot_diff_bias_rel ~ n_exp_states + n_inf_states + 
+                                  n_hhsize + 
+                                  r_tau + r_beta,
+                                data = df_control_measures_bias)
+summary(fit_hh_peak_size_bias_rel)
+
+fit_hh_epidemic_size_rel <- lm(CumInfTot_diff_bias_rel ~ n_exp_states + n_inf_states + 
+                                 n_hhsize + r_tau + r_beta, 
+                               data = df_control_measures_bias)
+summary(fit_hh_epidemic_size_rel)
+## With interactions
+fit_hh_peak_time_bias_rel_int <- lm(max_Inftot_time_diff_bias_rel ~ n_exp_states*n_inf_states + 
+                                      n_exp_states*n_hhsize + 
+                                      n_inf_states*n_hhsize + 
+                                      r_tau + r_beta, 
+                                    data = df_control_measures_bias %>% 
+                                      filter(max_Inftot_time_diff_bias_rel != Inf))
+summary(fit_hh_peak_time_bias_rel_int)
+
+fit_hh_peak_size_bias_rel_int <- lm(max_Inftot_diff_bias_rel ~ n_exp_states*n_inf_states + 
+                                      n_exp_states*n_hhsize + 
+                                      n_inf_states*n_hhsize +
+                                      r_tau + r_beta,
+                                    data = df_control_measures_bias)
+summary(fit_hh_peak_size_bias_rel_int)
+
+fit_hh_epidemic_size_rel_int <- lm(CumInfTot_diff_bias_rel ~ n_exp_states*n_inf_states + 
+                                     n_exp_states*n_hhsize + 
+                                     n_inf_states*n_hhsize + 
+                                     r_tau + r_beta, 
+                                   data = df_control_measures_bias)
+summary(fit_hh_epidemic_size_rel_int)
+
+stargazer(fit_hh_peak_time_bias_rel, fit_hh_peak_time_bias_rel_int,
+          fit_hh_peak_size_bias_rel, fit_hh_peak_size_bias_rel_int,
+          fit_hh_epidemic_size_rel, fit_hh_epidemic_size_rel_int,
+          type = "text", 
+          title = "Metaregression estimates NPI = 20%",
+          column.labels = c("Peak time", "Peak size", "Epidemic size"), 
+          column.separate = c(2, 2, 2), 
+          dep.var.caption = "", 
+          dep.var.labels.include = FALSE, 
+          covariate.labels = c("E", "I", "Household size (HH)", "$\\tau$", "$\\beta$", "E*I", "E*HH", "I*HH"), # 
+          model.numbers = FALSE,
+          omit.stat = c("all"), report = c("vc*"),
+          align = TRUE)
+
+stargazer(fit_hh_peak_time_bias_rel, fit_hh_peak_time_bias_rel_int,
+          fit_hh_peak_size_bias_rel, fit_hh_peak_size_bias_rel_int,
+          fit_hh_epidemic_size_rel, fit_hh_epidemic_size_rel_int,
+          type = "latex", 
+          out = "output/TableA1_metaregression_bias.tex", 
+          title = "Metaregression estimates NPI = 20%",
+          column.labels = c("Peak time", "Peak size", "Epidemic size"), 
+          column.separate = c(2, 2, 2), 
+          dep.var.caption = "", 
+          dep.var.labels.include = FALSE, 
+          covariate.labels = c("E", "I", "Household size (HH)", "$\\tau$", "$\\beta$", "E*I", "E*HH", "I*HH"), # 
+          model.numbers = FALSE,
+          omit.stat = c("all"), report = c("vc*"),
+          align = TRUE)
+
+### Table 4: Meta regression on category-specific outcomes on Vaccine Measures Coverage = 30% and Effectiveness = 90% NPI 0% reduction ----
+df_control_measures_bias_vax_propL_effH <- df_out_inf_all_control_summ %>% 
+  filter(r_omega == 0.000 & 
+           !((`Multicompartment structure` %in% c("E=1, I=1") & n_hhsize %in% c(1))) & 
+           eff_vax %in% c(0.9) & vax_prop == 0.3, level_npi %in% c(1.0)) 
+
+## Without interactions
+fit_hh_peak_time_bias_rel_vax_propL_effH <- lm(max_Inftot_time_diff_bias_rel ~ n_exp_states + n_inf_states + 
+                                  n_hhsize + 
+                                  r_tau + r_beta, 
+                                data = df_control_measures_bias_vax_propL_effH %>% 
+                                  filter(max_Inftot_time_diff_bias_rel != Inf))
+summary(fit_hh_peak_time_bias_rel_vax_propL_effH)
+
+fit_hh_peak_size_bias_rel_vax_propL_effH <- lm(max_Inftot_diff_bias_rel ~ n_exp_states + n_inf_states + 
+                                  n_hhsize + 
+                                  r_tau + r_beta,
+                                data = df_control_measures_bias_vax_propL_effH)
+summary(fit_hh_peak_size_bias_rel_vax_propL_effH)
+
+fit_hh_epidemic_size_rel_vax_propL_effH <- lm(CumInfTot_diff_bias_rel ~ n_exp_states + n_inf_states + 
+                                 n_hhsize + r_tau + r_beta, 
+                               data = df_control_measures_bias_vax_propL_effH)
+summary(fit_hh_epidemic_size_rel_vax_propL_effH)
+## With interactions
+fit_hh_peak_time_bias_rel_int_vax_propL_effH <- lm(max_Inftot_time_diff_bias_rel ~ n_exp_states*n_inf_states + 
+                                      n_exp_states*n_hhsize + 
+                                      n_inf_states*n_hhsize + 
+                                      r_tau + r_beta, 
+                                    data = df_control_measures_bias_vax_propL_effH %>% 
+                                      filter(max_Inftot_time_diff_bias_rel != Inf))
+summary(fit_hh_peak_time_bias_rel_int_vax_propL_effH)
+
+fit_hh_peak_size_bias_rel_int_vax_propL_effH <- lm(max_Inftot_diff_bias_rel ~ n_exp_states*n_inf_states + 
+                                      n_exp_states*n_hhsize + 
+                                      n_inf_states*n_hhsize +
+                                      r_tau + r_beta,
+                                    data = df_control_measures_bias_vax_propL_effH)
+summary(fit_hh_peak_size_bias_rel_int_vax_propL_effH)
+
+fit_hh_epidemic_size_rel_int_vax_propL_effH <- lm(CumInfTot_diff_bias_rel ~ n_exp_states*n_inf_states + 
+                                     n_exp_states*n_hhsize + 
+                                     n_inf_states*n_hhsize + 
+                                     r_tau + r_beta, 
+                                   data = df_control_measures_bias_vax_propL_effH)
+summary(fit_hh_epidemic_size_rel_int_vax_propL_effH)
+
+stargazer(fit_hh_peak_time_bias_rel_vax_propL_effH, fit_hh_peak_time_bias_rel_int_vax_propL_effH,
+          fit_hh_peak_size_bias_rel_vax_propL_effH, fit_hh_peak_size_bias_rel_int_vax_propL_effH,
+          fit_hh_epidemic_size_rel_vax_propL_effH, fit_hh_epidemic_size_rel_int_vax_propL_effH,
+          type = "text", 
+          title = "Metaregression estimates vaccination coverage = 30% & effectiveness = 90%",
+          column.labels = c("Peak time", "Peak size", "Epidemic size"), 
+          column.separate = c(2, 2, 2), 
+          dep.var.caption = "", 
+          dep.var.labels.include = FALSE, 
+          covariate.labels = c("E", "I", "Household size (HH)", "$\\tau$", "$\\beta$", "E*I", "E*HH", "I*HH"), # 
+          model.numbers = FALSE,
+          omit.stat = c("all"), report = c("vc*"),
+          align = TRUE)
+
+stargazer(fit_hh_peak_time_bias_rel_vax_propL_effH, fit_hh_peak_time_bias_rel_int_vax_propL_effH,
+          fit_hh_peak_size_bias_rel_vax_propL_effH, fit_hh_peak_size_bias_rel_int_vax_propL_effH,
+          fit_hh_epidemic_size_rel_vax_propL_effH, fit_hh_epidemic_size_rel_int_vax_propL_effH,
+          type = "latex", 
+          out = "output/TableA1_metaregression_bias_vax_propL_effH.tex", 
+          title = "Metaregression estimates vaccination coverage = 30% & effectiveness = 90%",
+          column.labels = c("Peak time", "Peak size", "Epidemic size"), 
+          column.separate = c(2, 2, 2), 
+          dep.var.caption = "", 
+          dep.var.labels.include = FALSE, 
+          covariate.labels = c("E", "I", "Household size (HH)", "$\\tau$", "$\\beta$", "E*I", "E*HH", "I*HH"), # 
+          model.numbers = FALSE,
+          omit.stat = c("all"), report = c("vc*"),
+          align = TRUE)
+
+### Table 5: Meta regression on category-specific outcomes on Vaccine Measures Coverage = 90% and Effectiveness = 90% NPI 0% reduction ----
+df_control_measures_bias_vax_propH_effH <- df_out_inf_all_control_summ %>% 
+  filter(r_omega == 0.000 & 
+           !((`Multicompartment structure` %in% c("E=1, I=1") & n_hhsize %in% c(1))) & 
+           eff_vax %in% c(0.9) & vax_prop == 0.9, level_npi %in% c(1.0)) 
+
+## Without interactions
+fit_hh_peak_time_bias_rel_vax_propH_effH <- lm(max_Inftot_time_diff_bias_rel ~ n_exp_states + n_inf_states + 
+                                                 n_hhsize + 
+                                                 r_tau + r_beta, 
+                                               data = df_control_measures_bias_vax_propH_effH %>% 
+                                                 filter(max_Inftot_time_diff_bias_rel != Inf))
+summary(fit_hh_peak_time_bias_rel_vax_propH_effH)
+
+fit_hh_peak_size_bias_rel_vax_propH_effH <- lm(max_Inftot_diff_bias_rel ~ n_exp_states + n_inf_states + 
+                                                 n_hhsize + 
+                                                 r_tau + r_beta,
+                                               data = df_control_measures_bias_vax_propH_effH)
+summary(fit_hh_peak_size_bias_rel_vax_propH_effH)
+
+fit_hh_epidemic_size_rel_vax_propH_effH <- lm(CumInfTot_diff_bias_rel ~ n_exp_states + n_inf_states + 
+                                                n_hhsize + r_tau + r_beta, 
+                                              data = df_control_measures_bias_vax_propH_effH)
+summary(fit_hh_epidemic_size_rel_vax_propH_effH)
+## With interactions
+fit_hh_peak_time_bias_rel_int_vax_propH_effH <- lm(max_Inftot_time_diff_bias_rel ~ n_exp_states*n_inf_states + 
+                                                     n_exp_states*n_hhsize + 
+                                                     n_inf_states*n_hhsize + 
+                                                     r_tau + r_beta, 
+                                                   data = df_control_measures_bias_vax_propH_effH %>% 
+                                                     filter(max_Inftot_time_diff_bias_rel != Inf))
+summary(fit_hh_peak_time_bias_rel_int_vax_propH_effH)
+
+fit_hh_peak_size_bias_rel_int_vax_propH_effH <- lm(max_Inftot_diff_bias_rel ~ n_exp_states*n_inf_states + 
+                                                     n_exp_states*n_hhsize + 
+                                                     n_inf_states*n_hhsize +
+                                                     r_tau + r_beta,
+                                                   data = df_control_measures_bias_vax_propH_effH)
+summary(fit_hh_peak_size_bias_rel_int_vax_propH_effH)
+
+fit_hh_epidemic_size_rel_int_vax_propH_effH <- lm(CumInfTot_diff_bias_rel ~ n_exp_states*n_inf_states + 
+                                                    n_exp_states*n_hhsize + 
+                                                    n_inf_states*n_hhsize + 
+                                                    r_tau + r_beta, 
+                                                  data = df_control_measures_bias_vax_propH_effH)
+summary(fit_hh_epidemic_size_rel_int_vax_propH_effH)
+
+stargazer(fit_hh_peak_time_bias_rel_vax_propH_effH, fit_hh_peak_time_bias_rel_int_vax_propH_effH,
+          fit_hh_peak_size_bias_rel_vax_propH_effH, fit_hh_peak_size_bias_rel_int_vax_propH_effH,
+          fit_hh_epidemic_size_rel_vax_propH_effH, fit_hh_epidemic_size_rel_int_vax_propH_effH,
+          type = "text", 
+          title = "Metaregression estimates vaccination coverage = 90% & effectiveness = 90%",
+          column.labels = c("Peak time", "Peak size", "Epidemic size"), 
+          column.separate = c(2, 2, 2), 
+          dep.var.caption = "", 
+          dep.var.labels.include = FALSE, 
+          covariate.labels = c("E", "I", "Household size (HH)", "$\\tau$", "$\\beta$", "E*I", "E*HH", "I*HH"), # 
+          model.numbers = FALSE,
+          omit.stat = c("all"), report = c("vc*"),
+          align = TRUE)
+
+stargazer(fit_hh_peak_time_bias_rel_vax_propH_effH, fit_hh_peak_time_bias_rel_int_vax_propH_effH,
+          fit_hh_peak_size_bias_rel_vax_propH_effH, fit_hh_peak_size_bias_rel_int_vax_propH_effH,
+          fit_hh_epidemic_size_rel_vax_propH_effH, fit_hh_epidemic_size_rel_int_vax_propH_effH,
+          type = "latex", 
+          out = "output/TableA1_metaregression_bias_vax_propH_effH.tex", 
+          title = "Metaregression estimates vaccination coverage = 90% & effectiveness = 90%",
+          column.labels = c("Peak time", "Peak size", "Epidemic size"), 
+          column.separate = c(2, 2, 2), 
+          dep.var.caption = "", 
+          dep.var.labels.include = FALSE, 
+          covariate.labels = c("E", "I", "Household size (HH)", "$\\tau$", "$\\beta$", "E*I", "E*HH", "I*HH"), # 
+          model.numbers = FALSE,
+          omit.stat = c("all"), report = c("vc*"),
+          align = TRUE)
+
+### Table 6: Meta regression on category-specific outcomes on Vaccine Measures Coverage = 90% and Effectiveness = 50% NPI 0% reduction ----
+df_control_measures_bias_vax_propH_effL <- df_out_inf_all_control_summ %>% 
+  filter(r_omega == 0.000 & 
+           !((`Multicompartment structure` %in% c("E=1, I=1") & n_hhsize %in% c(1))) & 
+           eff_vax %in% c(0.5) & vax_prop == 0.9, level_npi %in% c(1.0)) 
+
+## Without interactions
+fit_hh_peak_time_bias_rel_vax_propH_effL <- lm(max_Inftot_time_diff_bias_rel ~ n_exp_states + n_inf_states + 
+                                                 n_hhsize + 
+                                                 r_tau + r_beta, 
+                                               data = df_control_measures_bias_vax_propH_effL %>% 
+                                                 filter(max_Inftot_time_diff_bias_rel != Inf))
+summary(fit_hh_peak_time_bias_rel_vax_propH_effL)
+
+fit_hh_peak_size_bias_rel_vax_propH_effL <- lm(max_Inftot_diff_bias_rel ~ n_exp_states + n_inf_states + 
+                                                 n_hhsize + 
+                                                 r_tau + r_beta,
+                                               data = df_control_measures_bias_vax_propH_effL)
+summary(fit_hh_peak_size_bias_rel_vax_propH_effL)
+
+fit_hh_epidemic_size_rel_vax_propH_effL <- lm(CumInfTot_diff_bias_rel ~ n_exp_states + n_inf_states + 
+                                                n_hhsize + r_tau + r_beta, 
+                                              data = df_control_measures_bias_vax_propH_effL)
+summary(fit_hh_epidemic_size_rel_vax_propH_effL)
+## With interactions
+fit_hh_peak_time_bias_rel_int_vax_propH_effL <- lm(max_Inftot_time_diff_bias_rel ~ n_exp_states*n_inf_states + 
+                                                     n_exp_states*n_hhsize + 
+                                                     n_inf_states*n_hhsize + 
+                                                     r_tau + r_beta, 
+                                                   data = df_control_measures_bias_vax_propH_effL %>% 
+                                                     filter(max_Inftot_time_diff_bias_rel != Inf))
+summary(fit_hh_peak_time_bias_rel_int_vax_propH_effL)
+
+fit_hh_peak_size_bias_rel_int_vax_propH_effL <- lm(max_Inftot_diff_bias_rel ~ n_exp_states*n_inf_states + 
+                                                     n_exp_states*n_hhsize + 
+                                                     n_inf_states*n_hhsize +
+                                                     r_tau + r_beta,
+                                                   data = df_control_measures_bias_vax_propH_effL)
+summary(fit_hh_peak_size_bias_rel_int_vax_propH_effL)
+
+fit_hh_epidemic_size_rel_int_vax_propH_effL <- lm(CumInfTot_diff_bias_rel ~ n_exp_states*n_inf_states + 
+                                                    n_exp_states*n_hhsize + 
+                                                    n_inf_states*n_hhsize + 
+                                                    r_tau + r_beta, 
+                                                  data = df_control_measures_bias_vax_propH_effL)
+summary(fit_hh_epidemic_size_rel_int_vax_propH_effL)
+
+stargazer(fit_hh_peak_time_bias_rel_vax_propH_effL, fit_hh_peak_time_bias_rel_int_vax_propH_effL,
+          fit_hh_peak_size_bias_rel_vax_propH_effL, fit_hh_peak_size_bias_rel_int_vax_propH_effL,
+          fit_hh_epidemic_size_rel_vax_propH_effL, fit_hh_epidemic_size_rel_int_vax_propH_effL,
+          type = "text", 
+          title = "Metaregression estimates vaccination coverage = 90% & effectiveness = 50%",
+          column.labels = c("Peak time", "Peak size", "Epidemic size"), 
+          column.separate = c(2, 2, 2), 
+          dep.var.caption = "", 
+          dep.var.labels.include = FALSE, 
+          covariate.labels = c("E", "I", "Household size (HH)", "$\\tau$", "$\\beta$", "E*I", "E*HH", "I*HH"), # 
+          model.numbers = FALSE,
+          omit.stat = c("all"), report = c("vc*"),
+          align = TRUE)
+
+stargazer(fit_hh_peak_time_bias_rel_vax_propH_effL, fit_hh_peak_time_bias_rel_int_vax_propH_effL,
+          fit_hh_peak_size_bias_rel_vax_propH_effL, fit_hh_peak_size_bias_rel_int_vax_propH_effL,
+          fit_hh_epidemic_size_rel_vax_propH_effL, fit_hh_epidemic_size_rel_int_vax_propH_effL,
+          type = "latex", 
+          out = "output/TableA1_metaregression_bias_vax_propH_effL.tex", 
+          title = "Metaregression estimates vaccination coverage = 90% & effectiveness = 50%",
+          column.labels = c("Peak time", "Peak size", "Epidemic size"), 
+          column.separate = c(2, 2, 2), 
+          dep.var.caption = "", 
+          dep.var.labels.include = FALSE, 
+          covariate.labels = c("E", "I", "Household size (HH)", "$\\tau$", "$\\beta$", "E*I", "E*HH", "I*HH"), # 
+          model.numbers = FALSE,
+          omit.stat = c("all"), report = c("vc*"),
+          align = TRUE)
+
+### Table 7: Meta regression on category-specific outcomes on Vaccine Measures Coverage = 30% and Effectiveness = 50% NPI 0% reduction ----
+df_control_measures_bias_vax_propL_effL <- df_out_inf_all_control_summ %>% 
+  filter(r_omega == 0.000 & 
+           !((`Multicompartment structure` %in% c("E=1, I=1") & n_hhsize %in% c(1))) & 
+           eff_vax %in% c(0.5) & vax_prop == 0.3, level_npi %in% c(1.0)) 
+
+## Without interactions
+fit_hh_peak_time_bias_rel_vax_propL_effL <- lm(max_Inftot_time_diff_bias_rel ~ n_exp_states + n_inf_states + 
+                                                 n_hhsize + 
+                                                 r_tau + r_beta, 
+                                               data = df_control_measures_bias_vax_propL_effL %>% 
+                                                 filter(max_Inftot_time_diff_bias_rel != Inf))
+summary(fit_hh_peak_time_bias_rel_vax_propL_effL)
+
+fit_hh_peak_size_bias_rel_vax_propL_effL <- lm(max_Inftot_diff_bias_rel ~ n_exp_states + n_inf_states + 
+                                                 n_hhsize + 
+                                                 r_tau + r_beta,
+                                               data = df_control_measures_bias_vax_propL_effL)
+summary(fit_hh_peak_size_bias_rel_vax_propL_effL)
+
+fit_hh_epidemic_size_rel_vax_propL_effL <- lm(CumInfTot_diff_bias_rel ~ n_exp_states + n_inf_states + 
+                                                n_hhsize + r_tau + r_beta, 
+                                              data = df_control_measures_bias_vax_propL_effL)
+summary(fit_hh_epidemic_size_rel_vax_propL_effL)
+## With interactions
+fit_hh_peak_time_bias_rel_int_vax_propL_effL <- lm(max_Inftot_time_diff_bias_rel ~ n_exp_states*n_inf_states + 
+                                                     n_exp_states*n_hhsize + 
+                                                     n_inf_states*n_hhsize + 
+                                                     r_tau + r_beta, 
+                                                   data = df_control_measures_bias_vax_propL_effL %>% 
+                                                     filter(max_Inftot_time_diff_bias_rel != Inf))
+summary(fit_hh_peak_time_bias_rel_int_vax_propL_effL)
+
+fit_hh_peak_size_bias_rel_int_vax_propL_effL <- lm(max_Inftot_diff_bias_rel ~ n_exp_states*n_inf_states + 
+                                                     n_exp_states*n_hhsize + 
+                                                     n_inf_states*n_hhsize +
+                                                     r_tau + r_beta,
+                                                   data = df_control_measures_bias_vax_propL_effL)
+summary(fit_hh_peak_size_bias_rel_int_vax_propL_effL)
+
+fit_hh_epidemic_size_rel_int_vax_propL_effL <- lm(CumInfTot_diff_bias_rel ~ n_exp_states*n_inf_states + 
+                                                    n_exp_states*n_hhsize + 
+                                                    n_inf_states*n_hhsize + 
+                                                    r_tau + r_beta, 
+                                                  data = df_control_measures_bias_vax_propL_effL)
+summary(fit_hh_epidemic_size_rel_int_vax_propL_effL)
+
+stargazer(fit_hh_peak_time_bias_rel_vax_propL_effL, fit_hh_peak_time_bias_rel_int_vax_propL_effL,
+          fit_hh_peak_size_bias_rel_vax_propL_effL, fit_hh_peak_size_bias_rel_int_vax_propL_effL,
+          fit_hh_epidemic_size_rel_vax_propL_effL, fit_hh_epidemic_size_rel_int_vax_propL_effL,
+          type = "text", 
+          title = "Metaregression estimates vaccination coverage = 30% & effectiveness = 50%",
+          column.labels = c("Peak time", "Peak size", "Epidemic size"), 
+          column.separate = c(2, 2, 2), 
+          dep.var.caption = "", 
+          dep.var.labels.include = FALSE, 
+          covariate.labels = c("E", "I", "Household size (HH)", "$\\tau$", "$\\beta$", "E*I", "E*HH", "I*HH"), # 
+          model.numbers = FALSE,
+          omit.stat = c("all"), report = c("vc*"),
+          align = TRUE)
+
+stargazer(fit_hh_peak_time_bias_rel_vax_propL_effL, fit_hh_peak_time_bias_rel_int_vax_propL_effL,
+          fit_hh_peak_size_bias_rel_vax_propL_effL, fit_hh_peak_size_bias_rel_int_vax_propL_effL,
+          fit_hh_epidemic_size_rel_vax_propL_effL, fit_hh_epidemic_size_rel_int_vax_propL_effL,
+          type = "latex", 
+          out = "output/TableA1_metaregression_bias_vax_propL_effL.tex", 
+          title = "Metaregression estimates vaccination coverage = 30% & effectiveness = 50%",
+          column.labels = c("Peak time", "Peak size", "Epidemic size"), 
+          column.separate = c(2, 2, 2), 
+          dep.var.caption = "", 
+          dep.var.labels.include = FALSE, 
+          covariate.labels = c("E", "I", "Household size (HH)", "$\\tau$", "$\\beta$", "E*I", "E*HH", "I*HH"), # 
+          model.numbers = FALSE,
+          omit.stat = c("all"), report = c("vc*"),
+          align = TRUE)
