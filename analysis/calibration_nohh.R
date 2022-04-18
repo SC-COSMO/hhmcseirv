@@ -254,8 +254,11 @@ for(n_pid in unique(df_out_inf_noint_nohh$pid)){
 save(df_out_optim, file = "output/df_out_optim.RData")
 # hist(df_out_optim$r_beta)
 
+
+# Generate projections with calibrated betas in the absence of HH structure ----
 load(file = "output/df_out_optim.RData")
 
+  
 df_out_inf_hh_gt1 <- df_out_inf_all %>%
   filter(n_hhsize > 1, 
          time == 0)
@@ -298,3 +301,57 @@ l_out_projection <- foreach::foreach(n_pid = unique(df_out_optim$pid))  %dopar% 
 parallel::stopCluster(cl)
 save(l_out_projection, 
      file = "output/projection_hh_gt1/l_out_projection.RData")
+
+# Compute bias Delta(r_beta, r_beta_nhh) ----
+load(file = "output/projection_hh_gt1/l_out_projection.RData")
+
+df_out_inf_hh_gt1_noint <- df_out_inf_hh_gt1 %>% 
+  filter(vax_prop == 0,
+         level_npi == 1)
+
+df_out_optim_bias <- df_out_optim %>%
+  rename(r_beta_nhh = r_beta) %>%
+  right_join(df_out_inf_hh_gt1_noint, by = "pid") %>%
+  mutate(delta_r_beta = r_beta_nhh - r_beta)
+
+ggplot(df_out_optim_bias, aes(x = r_omega, y = r_beta_nhh - r_beta, color = as.factor(n_hhsize))) +
+  facet_grid(Esize ~ Isize) +
+  geom_point()
+## Metaregression on bias Delta(r_beta, r_beta_nhh) ----
+lm_out_delta_r_beta <- lm(delta_r_beta ~ n_exp_states*n_inf_states + 
+     n_exp_states*n_hhsize + 
+     n_inf_states*n_hhsize +
+     r_tau + r_beta, data = df_out_optim_bias)
+summary(lm_out_delta_r_beta)
+
+# Compute summary projections from No HH projections ----
+n_proj_nhh <- length(l_out_projection)
+df_out_inf_all_nhh <- c()
+for(i in 1:n_proj_nhh){ # i <- 1
+  temp <- l_out_projection[[i]]
+  v_names_exp    <- paste("E", letters[seq(1, temp$n_exp_states[1])], sep = "")
+  v_names_inf    <- paste("I", letters[seq(1, temp$n_inf_states[1])], sep = "")
+  v_names_inf_dx <- paste("IDX", letters[seq(1, temp$n_inf_states[1])], sep = "")
+  
+  df_temp <- data.frame(pid = temp$pid, 
+                        level_npi = temp$level_npi,
+                        eff_vax = temp$eff_vax,
+                        vax_prop = temp$vax_prop,
+                        time = temp$time,
+                        Exptot_nhh = rowSums(temp[, v_names_exp,drop=FALSE]),
+                        InfNoDX_nhh = rowSums(temp[, v_names_inf,drop=FALSE]),
+                        Inftot_nhh = rowSums(temp[, c(v_names_inf,
+                                                    v_names_inf_dx), drop=FALSE]),
+                        check.names = FALSE)
+  df_out_inf_all_nhh <- bind_rows(df_out_inf_all_nhh,
+                                  df_temp)
+}
+
+df_out_inf_all_nhh_noint <- df_out_inf_all_nhh %>% 
+  filter(vax_prop == 0,
+         level_npi == 1)
+#* 1. summarize the biased projections
+#* 2. Join in the true summarized projections with HH
+#* 3. Compute biases 
+#* 4. Visualize biases
+#* 5. Metaregress biases
