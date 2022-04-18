@@ -61,7 +61,7 @@ df_out_inf_noint_nohh <- df_out_inf_noint_hh %>%
   mutate(r_tau = 0,
           n_hhsize = 1)
 
-run_hhmcseirv <- function(df_params){
+run_hhmcseirv <- function(df_params, max_time = 14, nat_hist = TRUE){
   n_pop_size <- 1000000
   n_inf   <- 1
   n_contacts_comm <- 10 
@@ -76,8 +76,6 @@ run_hhmcseirv <- function(df_params){
   r_growth_rate <- 1# 1.01 # population growth rate
   r_birth       <- r_death*r_growth_rate
   
-  max_time <- 14
-  
   times <- seq(0, max_time, by = 1)
   
   ### DoE parameters
@@ -91,32 +89,61 @@ run_hhmcseirv <- function(df_params){
   n_inf_states <- df_params$n_inf_states
   
   # r_vax <- # TBD
-  
-  ### NPIs
-  # v_npi_times  <- c(0, 15, 16, 70, max_time+1)
-  # v_npi_levels <- c(1, 1, 0.2, 0.2, 0.2)
-  # v_npi_levels <- c(1, 1, df_params$level_npi, df_params$level_npi, df_params$level_npi)
-  # v_npi_levels <- c(1, 1, 0.6, 0.6, 0.6)
-  # v_npi_levels <- c(1, 1, 1, 1, 1)
-  
-  fun_npi <- approxfun(x = c(0:15), y = rep(1, 16), method = "linear")
-  
-  ### Vax rates
-  ### vaccination strategies
-  v_time_stop_vax <- c(0, 40, 41, max_time+1)
-  v_duration  <- diff(c(0, v_time_stop_vax))
-  # v_cum_prop_time <- c(0, 0.80, 0, 0)
-  v_cum_prop_time <- c(0, df_params$vax_prop, 0, 0)
-  
-  v_vax_rates <- cbind(daily_rate(cum_prop = v_cum_prop_time[2], # We need constant rate to get up to cumulative coverage
-                                  duration = v_duration[2]),       # We need constant rate to get up to cumulative coverage
-                       daily_rate(cum_prop = v_cum_prop_time[2],
-                                  duration = v_duration[2]),
-                       daily_rate(cum_prop = v_cum_prop_time[3],
-                                  duration = v_duration[3]),
-                       daily_rate(cum_prop = v_cum_prop_time[4],
-                                  duration = v_duration[4]))
-  fun_vax <- approxfun(x = v_time_stop_vax, y = v_vax_rates, method = "linear")
+  if(!nat_hist){ # If control measures
+    ### NPIs
+    v_npi_times  <- c(0, 9, 10, 70, max_time+1) 
+    # v_npi_levels <- c(1, 1, 0.2, 0.2, 0.2)
+    v_npi_levels <- c(1, 1, df_params$level_npi, df_params$level_npi, df_params$level_npi)
+    # v_npi_levels <- c(1, 1, 0.6, 0.6, 0.6)
+    # v_npi_levels <- c(1, 1, 1, 1, 1)
+    
+    fun_npi <- approxfun(x = v_npi_times, y = v_npi_levels, method = "linear")
+    
+    ### Vax rates
+    ### vaccination strategies
+    v_time_stop_vax <- c(0, 9, 10, 11, max_time+1)
+    v_duration  <- diff(c(0, v_time_stop_vax))
+    # v_cum_prop_time <- c(0, 0.80, 0, 0)
+    v_cum_prop_time <- c(0, 0, df_params$vax_prop, 0, 0)
+    
+    v_vax_rates <- cbind(#daily_rate(cum_prop = v_cum_prop_time[1], # We need constant rate to get up to cumulative coverage
+      #           duration = v_duration[1]),       # We need constant rate to get up to cumulative coverage
+      0,
+      daily_rate(cum_prop = v_cum_prop_time[2],
+                 duration = v_duration[2]),
+      daily_rate(cum_prop = v_cum_prop_time[3],
+                 duration = v_duration[3]),
+      daily_rate(cum_prop = v_cum_prop_time[4],
+                 duration = v_duration[4]),
+      0)
+    fun_vax <- approxfun(x = v_time_stop_vax, y = v_vax_rates, method = "linear")
+  } else{ # If Natural history
+    ### NPIs
+    # v_npi_times  <- c(0, 15, 16, 70, max_time+1)
+    # v_npi_levels <- c(1, 1, 0.2, 0.2, 0.2)
+    # v_npi_levels <- c(1, 1, df_params$level_npi, df_params$level_npi, df_params$level_npi)
+    # v_npi_levels <- c(1, 1, 0.6, 0.6, 0.6)
+    # v_npi_levels <- c(1, 1, 1, 1, 1)
+    
+    fun_npi <- approxfun(x = c(0:(max_time + 1)), y = rep(1, (max_time + 2)), method = "linear")
+    
+    ### Vax rates
+    ### vaccination strategies
+    v_time_stop_vax <- c(0, 40, 41, max_time+1)
+    v_duration  <- diff(c(0, v_time_stop_vax))
+    # v_cum_prop_time <- c(0, 0.80, 0, 0)
+    v_cum_prop_time <- c(0, df_params$vax_prop, 0, 0)
+    
+    v_vax_rates <- cbind(daily_rate(cum_prop = v_cum_prop_time[2], # We need constant rate to get up to cumulative coverage
+                                    duration = v_duration[2]),       # We need constant rate to get up to cumulative coverage
+                         daily_rate(cum_prop = v_cum_prop_time[2],
+                                    duration = v_duration[2]),
+                         daily_rate(cum_prop = v_cum_prop_time[3],
+                                    duration = v_duration[3]),
+                         daily_rate(cum_prop = v_cum_prop_time[4],
+                                    duration = v_duration[4]))
+    fun_vax <- approxfun(x = v_time_stop_vax, y = v_vax_rates, method = "linear") 
+  }
   
   l_parameters <- list(n_pop_size = n_pop_size,
                        n_inf   = n_inf, 
@@ -152,13 +179,14 @@ run_hhmcseirv <- function(df_params){
   
   v_Inftot <- calc_inf_totals(l_out)$Inftot
   
-  return(v_Inftot)
+  return(list(l_out = l_out,
+              v_Inftot = v_Inftot))
 }
 
 gof <- function(r_beta, v_targets, df_params){
   df_params$r_beta <- r_beta
   out_model <- run_hhmcseirv(df_params)
-  mse <- sum((v_targets - out_model)^2)
+  mse <- sum((v_targets - out_model$v_Inftot)^2)
   return(mse)
 }
 
@@ -208,6 +236,65 @@ l_out_optim <- foreach::foreach(n_pid = unique(df_out_inf_noint_nohh$pid))  %dop
 }
 parallel::stopCluster(cl)
 
+l_out_optim <- vector(mode = "list", length = nrow(df_out_inf_noint_nohh))
+df_out_optim <- c()
+i <- 1
+for(n_pid in unique(df_out_inf_noint_nohh$pid)){
+  load(paste("output/calibration/f_", n_pid, ".RData")) 
+  l_out_optim[[i]] <- l_out_optim_single
+  i <- i + 1
+  df_out_optim_single <- data.frame(pid = n_pid,
+                                     r_beta = l_out_optim_single$par,
+                                     MSE = l_out_optim_single$value,
+                                     counts = l_out_optim_single$counts[1],
+                                     convergence = l_out_optim_single$convergence)
+  df_out_optim <- rbind.data.frame(df_out_optim,
+                                   df_out_optim_single)
+}
+save(df_out_optim, file = "output/df_out_optim.RData")
+# hist(df_out_optim$r_beta)
 
+load(file = "output/df_out_optim.RData")
 
+df_out_inf_hh_gt1 <- df_out_inf_all %>%
+  filter(n_hhsize > 1, 
+         time == 0)
 
+no_cores <- parallel::detectCores() - 2
+cl <- parallel::makeForkCluster(no_cores) 
+doParallel::registerDoParallel(cl)
+
+l_out_projection <- foreach::foreach(n_pid = unique(df_out_optim$pid))  %dopar% {
+  temp_r_beta <- df_out_optim %>%
+    filter(pid == n_pid) %>%
+    select(r_beta) %>%
+    as.numeric()
+  
+  df_params_temp <- df_out_inf_hh_gt1 %>%
+    filter(pid == n_pid)
+  df_temp <- df_out_inf_hh_gt1 %>%
+    filter(n_hhsize == df_params_temp$n_hhsize,
+           n_exp_states == df_params_temp$n_exp_states,
+           n_inf_states == df_params_temp$n_inf_states,
+           r_beta == df_params_temp$r_beta,
+           r_tau == df_params_temp$r_tau,
+           r_omega ==df_params_temp$r_omega)  %>%
+    select(n_hhsize:pid)
+  df_temp$n_hhsize <- 1
+  df_temp$r_tau <- 0
+  df_temp$r_beta <- temp_r_beta
+  df_out_projection_single <- c()
+  for(i in 1:nrow(df_temp)){
+    df_params <- df_temp[i, ]
+    l_out_model <- run_hhmcseirv(df_params = df_params, 
+                                 max_time = 100, 
+                                 nat_hist = FALSE)
+    df_out_projection_single <- bind_rows(df_out_projection_single,
+                                          data.frame(df_params, 
+                                                     l_out_model$l_out$df_out_hh_mc_seir))
+  }
+  df_out_projection_single
+}
+parallel::stopCluster(cl)
+save(l_out_projection, 
+     file = "output/projection_hh_gt1/l_out_projection.RData")
