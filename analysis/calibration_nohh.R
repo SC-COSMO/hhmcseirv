@@ -355,3 +355,4 @@ df_out_inf_all_nhh_noint <- df_out_inf_all_nhh %>%
 #* 3. Compute biases 
 #* 4. Visualize biases
 #* 5. Metaregress biases
+#* 6. Do similar things for intervention effects
