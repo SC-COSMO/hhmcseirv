@@ -350,6 +350,204 @@ for(i in 1:n_proj_nhh){ # i <- 1
 df_out_inf_all_nhh_noint <- df_out_inf_all_nhh %>% 
   filter(vax_prop == 0,
          level_npi == 1)
+# Rename variables for pretty plotting format
+df_out_inf_all_nhh_noint$Esize <- paste0("# of E compartments = ", df_out_inf_all_nhh_noint$n_exp_states)
+df_out_inf_all_nhh_noint$Isize <- paste0("# of I compartments = ", df_out_inf_all_nhh_noint$n_inf_states)
+
+
+df_out_inf_all_nhh_noint_summ <- df_out_inf_all_nhh_noint %>%
+  group_by(pid) %>%
+  mutate(# Find the t at which I(t) is at its max
+    max_Inftot_nhh = max(Inftot_nhh),
+    max_Inftot_nhh_time = time[which.max(Inftot_nhh)],
+    # Find times at which I(t) is at a percentage of its max
+    p05_Inftot_nhh_time = max(time[which(Inftot_nhh <= max_Inftot_nhh*0.05 & time < max_Inftot_nhh_time)]),
+    p10_Inftot_nhh_time = max(time[which(Inftot_nhh <= max_Inftot_nhh*0.10 & time < max_Inftot_nhh_time)]),
+    p25_Inftot_nhh_time = max(time[which(Inftot_nhh <= max_Inftot_nhh*0.25 & time < max_Inftot_nhh_time)]),
+    p50_Inftot_nhh_time = max(time[which(Inftot_nhh <= max_Inftot_nhh*0.50 & time < max_Inftot_nhh_time)]),
+    # Find times at which x number of IDX(t) are seen
+    IDX500_nhh_time = max(time[which((Inftot_nhh-InfNoDX_nhh) <= 500 & time < max_Inftot_nhh_time)]),
+    IDX100_nhh_time = max(time[which((Inftot_nhh-InfNoDX_nhh) <= 100 & time < max_Inftot_nhh_time)]),
+    CumInfTot_nhh = sum(Inftot_nhh)) %>%
+  slice_head() %>%
+  ungroup()
+
+# Control measures outputs ----
+## Load data ----
+load(file = "output/df_output_doe_mc_seirv_all_control.RData")
+
+## Wrangle data ----
+# Rename variables for pretty plotting format
+df_out_inf_all$Esize <- paste0("# of E compartments = ", df_out_inf_all$n_exp_states)
+df_out_inf_all$Isize <- paste0("# of I compartments = ", df_out_inf_all$n_inf_states)
+df_out_inf_all$`Household size` <- ordered(df_out_inf_all$n_hhsize, unique(df_out_inf_all$n_hhsize))
+df_out_inf_all$`Household size labels` <- paste0("Household size = ", df_out_inf_all$n_hhsize)
+# df_out_inf_all$n_hhsize <- ordered(df_out_inf_all$n_hhsize)
+df_out_inf_all$`Vaccine effectiveness` <- scales::percent(df_out_inf_all$eff_vax)
+df_out_inf_all$PropVax <- paste0("Proportion vaccinated = ", scales::percent(df_out_inf_all$vax_prop))
+df_out_inf_all$EffVax  <- paste0("Vaccine effectiveness = ", scales::percent(df_out_inf_all$eff_vax))
+df_out_inf_all$NPIeff <- paste0("NPI effectiveness = ", scales::percent(1-df_out_inf_all$level_npi))
+df_out_inf_all$NPIeff_labels <- ordered(df_out_inf_all$NPIeff,
+                                        unique(df_out_inf_all$NPIeff), c("No NPI", "NPI20", "NPI"))
+df_out_inf_all$NPIeff_simple <- paste0(scales::percent(1-df_out_inf_all$level_npi))
+df_out_inf_all$`Multicompartment structure` <- paste0("E=", 
+                                                      df_out_inf_all$n_exp_states, 
+                                                      ", I=", 
+                                                      df_out_inf_all$n_inf_states)
+
+## Summarize output ----
+df_out_inf_all_summ <- df_out_inf_all %>%
+  group_by(pid) %>%
+  mutate(# Find the t at which I(t) is at its max
+    ref_category = ifelse(n_hhsize == 1 & n_exp_states == 1 & n_inf_states ==1, 
+                          1, 0), # Define HH=1, E=1, I=1 as reference category
+    max_Inftot = max(Inftot),
+    max_Inftot_time = time[which.max(Inftot)],
+    # Find times at which I(t) is at a percentage of its max
+    p05_Inftot_time = max(time[which(Inftot <= max_Inftot*0.05 & time < max_Inftot_time)]),
+    p10_Inftot_time = max(time[which(Inftot <= max_Inftot*0.10 & time < max_Inftot_time)]),
+    p25_Inftot_time = max(time[which(Inftot <= max_Inftot*0.25 & time < max_Inftot_time)]),
+    p50_Inftot_time = max(time[which(Inftot <= max_Inftot*0.50 & time < max_Inftot_time)]),
+    # Find times at which x number of IDX(t) are seen
+    IDX500_time = max(time[which((Inftot-InfNoDX) <= 500 & time < max_Inftot_time)]),
+    IDX100_time = max(time[which((Inftot-InfNoDX) <= 100 & time < max_Inftot_time)]),
+    CumInfTot = sum(Inftot)) %>%
+  slice_head() %>%
+  ungroup()
+
+# Combine no HH structure projections with natural history projections ----
+df_out_inf_all_biased_noint_summ <- df_out_inf_all_nhh_noint_summ %>%
+  right_join(df_out_inf_all_summ %>% filter(n_hhsize > 1, 
+                                            vax_prop == 0,
+                                            level_npi == 1), 
+             by = "pid") %>%
+  mutate(max_Inftot_diff = max_Inftot_nhh - max_Inftot,
+         max_Inftot_time_diff = max_Inftot_nhh_time - max_Inftot_time,
+         CumInfTot_diff = CumInfTot_nhh - CumInfTot,
+         # Percentage changes
+         max_Inftot_diff_perc = (max_Inftot_diff/max_Inftot)*100,
+         max_Inftot_time_diff_perc = (max_Inftot_time_diff/max_Inftot_time)*100,
+         CumInfTot_diff_perc = (CumInfTot_diff/CumInfTot)*100)
+
+# Plot epidemic curves HH vs no HH structure ----
+v_fig_pid <- df_out_inf_all_summ %>% filter(n_hhsize == 3, 
+                                            eff_vax == 1 & 
+                               vax_prop == 0,
+                               level_npi == 1,
+                               r_beta == 0.25 & r_tau == 0.50 & 
+                               r_omega == 0.000 & time <= 60 &
+                               `Multicompartment structure` %in% c("E=1, I=1", 
+                                                                   "E=3, I=3", 
+                                                                   "E=3, I=1", 
+                                                                   "E=1, I=3") 
+                               ) %>%
+  select(pid)
+
+df_fig_nohh_vs_hh <-  bind_rows(df_out_inf_all_nhh_noint %>% 
+                                  mutate(Structure = "No HH",
+                                         Exptot = Exptot_nhh ,
+                                         InfNoDX = InfNoDX_nhh ,
+                                         Inftot = Inftot_nhh ), 
+                                df_out_inf_all %>% mutate(Structure = "HH")) %>% 
+  filter(pid %in% as.matrix(v_fig_pid))
+
+
+
+gg_epidemic_curve_nohh_vs_hh <- ggplot(df_fig_nohh_vs_hh, 
+                                                aes(x = time, y = Inftot/10e6, color = Structure)) + # 
+  geom_line(size = 1.1) +
+  # geom_segment(aes(x = max_Inftot_time_E1_I1_hh1$max_Inftot_time, 
+  #                  xend = max_Inftot_time_E1_I1_hh1$max_Inftot_time, 
+  #                  y = 0, 
+  #                  yend = max_Inftot_time_E1_I1_hh1$max_Inftot),
+  #              linetype = "dashed", color = "blue") +
+  # geom_segment(aes(x = max_Inftot_time_E1_I1_hh3$max_Inftot_time, 
+  #                  xend = max_Inftot_time_E1_I1_hh3$max_Inftot_time, 
+  #                  y = 0, 
+  #                  yend = max_Inftot_time_E1_I1_hh3$max_Inftot),
+  #              linetype = "dashed", color = "red") +
+  # geom_point(aes(x = max_Inftot_time_E1_I1_hh1$max_Inftot_time, 
+  #                y = max_Inftot_time_E1_I1_hh1$max_Inftot),
+  #            color = "blue", size = 2.5) +
+  # geom_point(aes(x = max_Inftot_time_E1_I1_hh3$max_Inftot_time, 
+  #                y = max_Inftot_time_E1_I1_hh3$max_Inftot),
+  #            color = "red", size = 2.5) +
+  # geom_segment(aes(x = x0, xend = max_Inftot_time,
+  #                  y = y0, yend = max_Inftot,
+  #                  color = `Household size`),
+  #              linejoin = "mitre",
+  #              linetype = "dashed", arrow = arrow(length = unit(0.15, "inches"),
+  #                                                 type = "closed"), 
+  #              show.legend = FALSE) +
+  # geom_vline(xintercept = as.numeric(max_Inftot_time_E1_I1_hh1), linetype = "dashed", color = "blue") +
+  # geom_vline(xintercept = as.numeric(max_Inftot_time_E1_I1_hh3), linetype = "dashed", color = "red") +
+  facet_grid(Esize ~ Isize) +
+  scale_y_continuous(labels = function(x) scales::percent(x, accuracy = 1.0), limits = c(0, 0.06)) +
+  # scale_color_grey(start = 0.2, end = 0.6) +
+  scale_color_manual(values = c("1" = "blue", "3" = "red")) +
+  xlab("Time") +
+  ylab("Infected population (% of total population)") +
+  guides(color = guide_legend(nrow = 2), 
+         linetype = guide_legend(nrow = 1)) +
+  theme_bw(base_size = 20) +
+  theme(strip.background = element_rect(colour="white", fill="white"),
+        strip.text = element_text(hjust = 0, face = "bold", size = 12),
+        # legend.position = c(""),
+        legend.position = c(0.85, 0.90),
+        # legend.position = "bottom",
+        # legend.margin = margin(0, 0, 0, 0),
+        # legend.box.margin=margin(-10,-10,-10,-10)
+        legend.title = element_text(size = 12), 
+        legend.text = element_text(size = 12),
+        legend.key = element_blank())
+
+# Metaregression ----
+## Without interactions
+fit_hh_peak_time_bias_rel_nhh <- lm(max_Inftot_time_diff_perc ~ n_exp_states + 
+                                      n_inf_states + 
+                                      n_hhsize + 
+                                      r_tau + r_beta, 
+                                    data = df_out_inf_all_biased_noint_summ %>% 
+                                      filter(max_Inftot_time_diff_perc != Inf))
+summary(fit_hh_peak_time_bias_rel_nhh)
+
+fit_hh_peak_size_bias_rel_nhh <- lm(max_Inftot_diff_perc ~ n_exp_states + 
+                                      n_inf_states + 
+                                      n_hhsize + 
+                                      r_tau + r_beta,
+                                    data = df_out_inf_all_biased_noint_summ)
+summary(fit_hh_peak_size_bias_rel_nhh)
+
+fit_hh_epidemic_size_rel_nhh <- lm(CumInfTot_diff_perc ~ n_exp_states + 
+                                     n_inf_states + 
+                                     n_hhsize +
+                                     r_tau + r_beta, 
+                                   data = df_out_inf_all_biased_noint_summ)
+summary(fit_hh_epidemic_size_rel_nhh)
+
+## With interactions
+fit_hh_peak_time_bias_rel_nhh <- lm(max_Inftot_time_diff_perc ~ n_exp_states*n_inf_states + 
+                                      n_exp_states*n_hhsize + 
+                                      n_inf_states*n_hhsize + 
+                                      r_tau + r_beta, 
+                                    data = df_out_inf_all_biased_noint_summ %>% 
+                                      filter(max_Inftot_time_diff_perc != Inf))
+summary(fit_hh_peak_time_bias_rel_nhh)
+
+fit_hh_peak_size_bias_rel_nhh <- lm(max_Inftot_diff_perc ~ n_exp_states*n_inf_states + 
+                                      n_exp_states*n_hhsize + 
+                                      n_inf_states*n_hhsize +
+                                      r_tau + r_beta,
+                                    data = df_out_inf_all_biased_noint_summ)
+summary(fit_hh_peak_size_bias_rel_nhh)
+
+fit_hh_epidemic_size_rel_nhh <- lm(CumInfTot_diff_perc ~ n_exp_states*n_inf_states + 
+                                     n_exp_states*n_hhsize + 
+                                     n_inf_states*n_hhsize + 
+                                     r_tau + r_beta, 
+                                   data = df_out_inf_all_biased_noint_summ)
+summary(fit_hh_epidemic_size_rel_nhh)
+
 #* 1. summarize the biased projections
 #* 2. Join in the true summarized projections with HH
 #* 3. Compute biases 
