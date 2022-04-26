@@ -338,7 +338,13 @@ for(i in 1:n_proj_nhh){ # i <- 1
                         eff_vax = temp$eff_vax,
                         vax_prop = temp$vax_prop,
                         time = temp$time,
-                        Exptot_nhh = rowSums(temp[, v_names_exp,drop=FALSE]),
+                        n_hhsize = temp$n_hhsize,
+                        r_beta = temp$r_beta,
+                        r_tau = temp$r_tau,
+                        r_omega = temp$r_omega,
+                        n_exp_states = temp$n_exp_states,
+                        n_inf_states = temp$n_inf_states,
+                        # Exptot_nhh = rowSums(temp[, v_names_exp,drop=FALSE]),
                         InfNoDX_nhh = rowSums(temp[, v_names_inf,drop=FALSE]),
                         Inftot_nhh = rowSums(temp[, c(v_names_inf,
                                                     v_names_inf_dx), drop=FALSE]),
@@ -353,7 +359,20 @@ df_out_inf_all_nhh_noint <- df_out_inf_all_nhh %>%
 # Rename variables for pretty plotting format
 df_out_inf_all_nhh_noint$Esize <- paste0("# of E compartments = ", df_out_inf_all_nhh_noint$n_exp_states)
 df_out_inf_all_nhh_noint$Isize <- paste0("# of I compartments = ", df_out_inf_all_nhh_noint$n_inf_states)
-
+df_out_inf_all_nhh_noint$`Household size` <- ordered(df_out_inf_all_nhh_noint$n_hhsize, unique(df_out_inf_all_nhh_noint$n_hhsize))
+df_out_inf_all_nhh_noint$`Household size labels` <- paste0("Household size = ", df_out_inf_all_nhh_noint$n_hhsize)
+# df_out_inf_all_nhh_noint$n_hhsize <- ordered(df_out_inf_all_nhh_noint$n_hhsize)
+df_out_inf_all_nhh_noint$`Vaccine effectiveness` <- scales::percent(df_out_inf_all_nhh_noint$eff_vax)
+df_out_inf_all_nhh_noint$PropVax <- paste0("Proportion vaccinated = ", scales::percent(df_out_inf_all_nhh_noint$vax_prop))
+df_out_inf_all_nhh_noint$EffVax  <- paste0("Vaccine effectiveness = ", scales::percent(df_out_inf_all_nhh_noint$eff_vax))
+df_out_inf_all_nhh_noint$NPIeff <- paste0("NPI effectiveness = ", scales::percent(1-df_out_inf_all_nhh_noint$level_npi))
+df_out_inf_all_nhh_noint$NPIeff_labels <- ordered(df_out_inf_all_nhh_noint$NPIeff,
+                                        unique(df_out_inf_all_nhh_noint$NPIeff), c("No NPI"))
+df_out_inf_all_nhh_noint$NPIeff_simple <- paste0(scales::percent(1-df_out_inf_all_nhh_noint$level_npi))
+df_out_inf_all_nhh_noint$`Multicompartment structure` <- paste0("E=", 
+                                                      df_out_inf_all_nhh_noint$n_exp_states, 
+                                                      ", I=", 
+                                                      df_out_inf_all_nhh_noint$n_inf_states)
 
 df_out_inf_all_nhh_noint_summ <- df_out_inf_all_nhh_noint %>%
   group_by(pid) %>%
@@ -444,17 +463,23 @@ v_fig_pid <- df_out_inf_all_summ %>% filter(n_hhsize == 3,
   select(pid)
 
 df_fig_nohh_vs_hh <-  bind_rows(df_out_inf_all_nhh_noint %>% 
-                                  mutate(Structure = "No HH",
-                                         Exptot = Exptot_nhh ,
-                                         InfNoDX = InfNoDX_nhh ,
-                                         Inftot = Inftot_nhh ), 
-                                df_out_inf_all %>% mutate(Structure = "HH")) %>% 
+                                  mutate(Structure = "No HH") %>%
+                                  mutate(`Household size` = ordered(1, 
+                                                                    levels = c(1, 3, 5)),
+                                         `NPIeff_labels` = ordered("No NPI", 
+                                                                   levels = c("No NPI", "NPI20", "NPI"))) %>%
+                                  rename(#Exptot = Exptot_nhh ,
+                                         InfNoDX = InfNoDX_nhh,
+                                         Inftot = Inftot_nhh), 
+                                df_out_inf_all %>% 
+                                  mutate(Structure = "HH")) %>% 
   filter(pid %in% as.matrix(v_fig_pid))
 
 
 
 gg_epidemic_curve_nohh_vs_hh <- ggplot(df_fig_nohh_vs_hh, 
-                                                aes(x = time, y = Inftot/10e6, color = Structure)) + # 
+                                                aes(x = time, y = Inftot/10e6, 
+                                                    color = Structure)) + # 
   geom_line(size = 1.1) +
   # geom_segment(aes(x = max_Inftot_time_E1_I1_hh1$max_Inftot_time, 
   #                  xend = max_Inftot_time_E1_I1_hh1$max_Inftot_time, 
@@ -481,10 +506,24 @@ gg_epidemic_curve_nohh_vs_hh <- ggplot(df_fig_nohh_vs_hh,
   #              show.legend = FALSE) +
   # geom_vline(xintercept = as.numeric(max_Inftot_time_E1_I1_hh1), linetype = "dashed", color = "blue") +
   # geom_vline(xintercept = as.numeric(max_Inftot_time_E1_I1_hh3), linetype = "dashed", color = "red") +
+  annotate("text",
+           label  = "Calibration",
+           x      = 8,
+           y      = 0.062,
+           size   = 6,
+           colour = "#393F3E") +
+  annotate("text",
+           label  = "Projection",
+           x      = 22,
+           y      = 0.062,
+           size   = 6,
+           colour = "#393F3E") +
+  geom_vline(xintercept = 15, linetype = "dashed", color = "black") +
   facet_grid(Esize ~ Isize) +
-  scale_y_continuous(labels = function(x) scales::percent(x, accuracy = 1.0), limits = c(0, 0.06)) +
+  scale_x_continuous(limits = c(0, 50)) +
+  scale_y_continuous(labels = function(x) scales::percent(x, accuracy = 1.0), limits = c(0, 0.065)) +
   # scale_color_grey(start = 0.2, end = 0.6) +
-  scale_color_manual(values = c("1" = "blue", "3" = "red")) +
+  scale_color_manual(values = c("No HH" = "blue", "HH" = "red")) +
   xlab("Time") +
   ylab("Infected population (% of total population)") +
   guides(color = guide_legend(nrow = 2), 
@@ -500,6 +539,7 @@ gg_epidemic_curve_nohh_vs_hh <- ggplot(df_fig_nohh_vs_hh,
         legend.title = element_text(size = 12), 
         legend.text = element_text(size = 12),
         legend.key = element_blank())
+gg_epidemic_curve_nohh_vs_hh
 
 # Metaregression ----
 ## Without interactions
