@@ -166,7 +166,8 @@ run_hhmcseirv <- function(df_params, max_time = 14, nat_hist = TRUE){
                        n_inf_states  = n_inf_states,
                        times = times,
                        fun_npi = fun_npi,
-                       fun_vax = fun_vax
+                       fun_vax = fun_vax,
+                       eff_vax = eff_vax
   )
   # list2env(l_parameters, envir = .GlobalEnv)
   
@@ -268,7 +269,7 @@ cl <- parallel::makeForkCluster(no_cores)
 doParallel::registerDoParallel(cl)
 
 l_out_projection <- foreach::foreach(n_pid = unique(df_out_optim$pid))  %dopar% {
-  temp_r_beta <- df_out_optim %>%
+  temp_r_beta <- df_out_optim %>% # n_pid <- unique(df_out_optim$pid)[1]
     filter(pid == n_pid) %>%
     select(r_beta) %>%
     as.numeric()
@@ -287,7 +288,7 @@ l_out_projection <- foreach::foreach(n_pid = unique(df_out_optim$pid))  %dopar% 
   df_temp$r_tau <- 0
   df_temp$r_beta <- temp_r_beta
   df_out_projection_single <- c()
-  for(i in 1:nrow(df_temp)){
+  for(i in 1:nrow(df_temp)){ # i <- 1
     df_params <- df_temp[i, ]
     l_out_model <- run_hhmcseirv(df_params = df_params, 
                                  max_time = 100, 
@@ -327,7 +328,7 @@ summary(lm_out_delta_r_beta)
 # Compute summary projections from No HH projections ----
 n_proj_nhh <- length(l_out_projection)
 df_out_inf_all_nhh <- c()
-for(i in 1:n_proj_nhh){ # i <- 1
+for(i in 1:n_proj_nhh){ # i <- 2
   temp <- l_out_projection[[i]]
   v_names_exp    <- paste("E", letters[seq(1, temp$n_exp_states[1])], sep = "")
   v_names_inf    <- paste("I", letters[seq(1, temp$n_inf_states[1])], sep = "")
@@ -828,16 +829,16 @@ gg_control_measures_E1_I1_E3_I3 <- ggplot(df_control_measures_E1_I1_E3_I3,
   scale_x_discrete() + 
   geom_bracket(y.position = 600*1000, label = "O[NH]", type = "expression", 
                xmin = 0.7, 
-               xmax = 1.3, inherit.aes = FALSE, ) +
+               xmax = 1.3, inherit.aes = FALSE, label.size = 8) +
   geom_bracket(y.position = 580*1000, label = "O[HH]", type = "expression", 
                xmin = 1.7, 
-               xmax = 2.3, inherit.aes = FALSE) +
+               xmax = 2.3, inherit.aes = FALSE, label.size = 8) +
   # xlab("Household size") +
   theme_bw(base_size = 20) +
   # coord_flip() +
   theme(strip.background = element_rect(colour="white", fill="white"),
         strip.text = element_text(hjust = 0, face = "bold", size = 12),
-        axis.title.x=element_blank(),
+        axis.title.x = element_blank(),
         legend.position = c(0.5, 0.3),
         # legend.position = "bottom",
         # legend.margin = margin(0, 0, 0, 0),
@@ -851,13 +852,15 @@ grid.brackets(#x1 = 180, x2 = 180,
               y1 = 150, y2 = 285, 
               lwd = 1)
 grid.text(x = unit(470, "native"), y = unit(223, "native"),
-          label = expression(paste(Delta, O[NH])), hjust = 0, vjust=0)
+          label = expression(paste(Delta, O[NH])), hjust = 0, vjust=0, 
+          gp=gpar(fontsize=20))
 ## Second pair of brackets
 grid.brackets(x1 = 830, x2 = 830, 
               y1 = 170, y2 = 275, 
               lwd = 1)
 grid.text(x = unit(870, "native"), y = unit(230, "native"),
-          label = expression(paste(Delta, O[HH])), hjust = 0, vjust=0)
+          label = expression(paste(Delta, O[HH])), hjust = 0, vjust=0, 
+          gp=gpar(fontsize=20))
 
 grid.text(x = unit(100, "native"), y = unit(75, "native"),
           label =  expression(paste("rBias = ", 
@@ -865,7 +868,8 @@ grid.text(x = unit(100, "native"), y = unit(75, "native"),
                                          paste(Delta, O[HH])
                                     )%*%100, " = 31%")
           ), 
-          hjust = 0, vjust=0)
+          hjust = 0, vjust=0, 
+          gp=gpar(fontsize=20))
 dev.off()
 
 #### Maximum infections ----
@@ -917,6 +921,313 @@ fig3 <- ggarrange(gg_exemplary_bias, gg_peak_size_bias_rel,
 ggsave(plot = fig3, 
        filename = "figs/Paper/Fig3.pdf", 
        width = 24, height = 10)
+
+
+# Appendix figures ----
+## Appendix Figure 1 ----
+v_fig_pid_npi20_nohh_vs_hh <- df_out_inf_all_summ %>% 
+  filter(n_hhsize == 3, 
+         eff_vax == 1 & 
+           vax_prop == 0,
+         level_npi == 0.8,
+         r_beta == 0.25 & r_tau == 0.50 & 
+           r_omega == 0.000 & time <= 60 &
+           `Multicompartment structure` %in% c("E=1, I=1", 
+                                               "E=3, I=3", 
+                                               "E=3, I=1", 
+                                               "E=1, I=3") 
+) %>%
+  select(pid)
+
+df_fig_npi20_nohh_vs_hh <-  bind_rows(df_out_inf_all_nhh %>% 
+                                  mutate(Structure = "No HH") %>%
+                                  mutate(`Household size` = ordered(1, 
+                                                                    levels = c(1, 3, 5)),
+                                         `NPIeff_labels` = ordered("No NPI", 
+                                                                   levels = c("No NPI", "NPI20", "NPI60"))) %>%
+                                  rename(#Exptot = Exptot_nhh ,
+                                    InfNoDX = InfNoDX_nhh,
+                                    Inftot = Inftot_nhh), 
+                                df_out_inf_all %>% 
+                                  mutate(Structure = "HH")) %>% 
+  filter(pid %in% as.matrix(v_fig_pid_npi20_nohh_vs_hh))
+
+gg_epidemic_curve_NPI20_E1_I1_E3_I3 <- ggplot(df_fig_npi20_nohh_vs_hh, 
+                                       aes(x = time, y = Inftot/10e6, 
+                                           color = Structure)) + # 
+  geom_line(size = 1.1) +
+  # geom_segment(aes(x = max_Inftot_time_E1_I1_hh1$max_Inftot_time, 
+  #                  xend = max_Inftot_time_E1_I1_hh1$max_Inftot_time, 
+  #                  y = 0, 
+  #                  yend = max_Inftot_time_E1_I1_hh1$max_Inftot),
+  #              linetype = "dashed", color = "blue") +
+  # geom_segment(aes(x = max_Inftot_time_E1_I1_hh3$max_Inftot_time, 
+  #                  xend = max_Inftot_time_E1_I1_hh3$max_Inftot_time, 
+  #                  y = 0, 
+  #                  yend = max_Inftot_time_E1_I1_hh3$max_Inftot),
+  #              linetype = "dashed", color = "red") +
+  # geom_point(aes(x = max_Inftot_time_E1_I1_hh1$max_Inftot_time, 
+#                y = max_Inftot_time_E1_I1_hh1$max_Inftot),
+#            color = "blue", size = 2.5) +
+# geom_point(aes(x = max_Inftot_time_E1_I1_hh3$max_Inftot_time, 
+#                y = max_Inftot_time_E1_I1_hh3$max_Inftot),
+#            color = "red", size = 2.5) +
+# geom_segment(aes(x = x0, xend = max_Inftot_time,
+#                  y = y0, yend = max_Inftot,
+#                  color = `Household size`),
+#              linejoin = "mitre",
+#              linetype = "dashed", arrow = arrow(length = unit(0.15, "inches"),
+#                                                 type = "closed"), 
+#              show.legend = FALSE) +
+# geom_vline(xintercept = as.numeric(max_Inftot_time_E1_I1_hh1), linetype = "dashed", color = "blue") +
+# geom_vline(xintercept = as.numeric(max_Inftot_time_E1_I1_hh3), linetype = "dashed", color = "red") +
+  facet_grid(Esize ~ Isize) +
+  scale_x_continuous(limits = c(0, 50)) +
+  scale_y_continuous(labels = function(x) scales::percent(x, accuracy = 1.0), limits = c(0, 0.065)) +
+  # scale_color_grey(start = 0.2, end = 0.6) +
+  scale_color_manual(values = c("No HH" = "blue", "HH" = "red")) +
+  xlab("Time") +
+  ylab("Infected population (% of total population)") +
+  guides(color = guide_legend(nrow = 2), 
+         linetype = guide_legend(nrow = 1)) +
+  theme_bw(base_size = 20) +
+  theme(strip.background = element_rect(colour="white", fill="white"),
+        strip.text = element_text(hjust = 0, face = "bold", size = 12),
+        # legend.position = c(""),
+        legend.position = c(0.85, 0.90),
+        # legend.position = "bottom",
+        # legend.margin = margin(0, 0, 0, 0),
+        # legend.box.margin=margin(-10,-10,-10,-10)
+        legend.title = element_text(size = 12), 
+        legend.text = element_text(size = 12),
+        legend.key = element_blank())
+gg_epidemic_curve_NPI20_E1_I1_E3_I3
+ggsave(plot = gg_epidemic_curve_NPI20_E1_I1_E3_I3, 
+       filename = "figs/Paper/FigA1_NPI20_curves_calib.pdf", 
+       width = 12, height = 8)
+
+## Appendix Figure 2 ----
+v_fig_pid_npi60_nohh_vs_hh <- df_out_inf_all_summ %>%
+  filter(n_hhsize == 3, 
+         eff_vax == 1 & 
+           vax_prop == 0,
+         level_npi == 0.4,
+         r_beta == 0.25 & r_tau == 0.50 & 
+           r_omega == 0.000 & time <= 60 &
+           `Multicompartment structure` %in% c("E=1, I=1", 
+                                               "E=3, I=3", 
+                                               "E=3, I=1", 
+                                               "E=1, I=3") 
+) %>%
+  select(pid)
+
+df_fig_npi60_nohh_vs_hh <-  bind_rows(df_out_inf_all_nhh %>% 
+                                        mutate(Structure = "No HH") %>%
+                                        mutate(`Household size` = ordered(1, 
+                                                                          levels = c(1, 3, 5)),
+                                               `NPIeff_labels` = ordered("No NPI", 
+                                                                         levels = c("No NPI", "NPI20", "NPI60"))) %>%
+                                        rename(#Exptot = Exptot_nhh ,
+                                          InfNoDX = InfNoDX_nhh,
+                                          Inftot = Inftot_nhh), 
+                                      df_out_inf_all %>% 
+                                        mutate(Structure = "HH")) %>% 
+  filter(pid %in% as.matrix(v_fig_pid_npi60_nohh_vs_hh))
+
+gg_epidemic_curve_NPI60_E1_I1_E3_I3 <- ggplot(df_fig_npi60_nohh_vs_hh, 
+                                              aes(x = time, y = Inftot/10e6, 
+                                                  color = Structure)) + # 
+  geom_line(size = 1.1) +
+  # geom_segment(aes(x = max_Inftot_time_E1_I1_hh1$max_Inftot_time, 
+  #                  xend = max_Inftot_time_E1_I1_hh1$max_Inftot_time, 
+  #                  y = 0, 
+  #                  yend = max_Inftot_time_E1_I1_hh1$max_Inftot),
+  #              linetype = "dashed", color = "blue") +
+  # geom_segment(aes(x = max_Inftot_time_E1_I1_hh3$max_Inftot_time, 
+  #                  xend = max_Inftot_time_E1_I1_hh3$max_Inftot_time, 
+  #                  y = 0, 
+  #                  yend = max_Inftot_time_E1_I1_hh3$max_Inftot),
+  #              linetype = "dashed", color = "red") +
+  # geom_point(aes(x = max_Inftot_time_E1_I1_hh1$max_Inftot_time, 
+#                y = max_Inftot_time_E1_I1_hh1$max_Inftot),
+#            color = "blue", size = 2.5) +
+# geom_point(aes(x = max_Inftot_time_E1_I1_hh3$max_Inftot_time, 
+#                y = max_Inftot_time_E1_I1_hh3$max_Inftot),
+#            color = "red", size = 2.5) +
+# geom_segment(aes(x = x0, xend = max_Inftot_time,
+#                  y = y0, yend = max_Inftot,
+#                  color = `Household size`),
+#              linejoin = "mitre",
+#              linetype = "dashed", arrow = arrow(length = unit(0.15, "inches"),
+#                                                 type = "closed"), 
+#              show.legend = FALSE) +
+# geom_vline(xintercept = as.numeric(max_Inftot_time_E1_I1_hh1), linetype = "dashed", color = "blue") +
+# geom_vline(xintercept = as.numeric(max_Inftot_time_E1_I1_hh3), linetype = "dashed", color = "red") +
+facet_grid(Esize ~ Isize) +
+  scale_x_continuous(limits = c(0, 50)) +
+  scale_y_continuous(labels = function(x) scales::percent(x, accuracy = 1.0), limits = c(0, 0.065)) +
+  # scale_color_grey(start = 0.2, end = 0.6) +
+  scale_color_manual(values = c("No HH" = "blue", "HH" = "red")) +
+  xlab("Time") +
+  ylab("Infected population (% of total population)") +
+  guides(color = guide_legend(nrow = 2), 
+         linetype = guide_legend(nrow = 1)) +
+  theme_bw(base_size = 20) +
+  theme(strip.background = element_rect(colour="white", fill="white"),
+        strip.text = element_text(hjust = 0, face = "bold", size = 12),
+        # legend.position = c(""),
+        legend.position = c(0.85, 0.90),
+        # legend.position = "bottom",
+        # legend.margin = margin(0, 0, 0, 0),
+        # legend.box.margin=margin(-10,-10,-10,-10)
+        legend.title = element_text(size = 12), 
+        legend.text = element_text(size = 12),
+        legend.key = element_blank())
+gg_epidemic_curve_NPI60_E1_I1_E3_I3
+ggsave(plot = gg_epidemic_curve_NPI60_E1_I1_E3_I3, 
+       filename = "figs/Paper/FigA2_NPI60_curves_calib.pdf", 
+       width = 12, height = 8)
+
+#### Appendix Figure 3 ----
+v_fig_pid_vax_E1_I1_nohh_vs_hh <- df_out_inf_all_summ %>%
+  filter(n_hhsize %in% c(3) & 
+           eff_vax %in% c(0.5, 0.9) & 
+           vax_prop %in% c(0, 0.3, 0.9) & 
+           level_npi %in% c(1.0),
+         r_beta == 0.25 & r_tau == 0.50 & 
+           r_omega == 0.000 & time <= 60 &
+           `Multicompartment structure` %in% c("E=1, I=1", 
+                                               # "E=3, I=3", 
+                                               # "E=3, I=1", 
+                                               # "E=1, I=3",
+                                               NULL) 
+  ) %>%
+  select(pid)
+
+df_epi_curve_vax_E1_I1 <- bind_rows(df_out_inf_all_nhh %>% 
+                                      mutate(Structure = ordered("No HH", 
+                                                                 levels = c("No HH", "HH"))) %>%
+                                      mutate(`Household size` = ordered(1, 
+                                                                        levels = c(1, 3, 5))) %>%
+                                      rename(#Exptot = Exptot_nhh ,
+                                        InfNoDX = InfNoDX_nhh,
+                                        Inftot = Inftot_nhh), 
+                                    df_out_inf_all %>% 
+                                      mutate(Structure = ordered("HH", 
+                                                                 levels = c("No HH", "HH"))) %>%
+                                      filter(`Multicompartment structure` %in% c("E=1, I=1", 
+                                                                                 # "E=3, I=3", 
+                                                                                 # "E=3, I=1", 
+                                                                                 # "E=1, I=3",
+                                                                                 NULL))) %>% 
+  filter(pid %in% as.matrix(v_fig_pid_vax_E1_I1_nohh_vs_hh))
+
+gg_epidemic_curve_vax_E1_I1 <- ggplot(df_epi_curve_vax_E1_I1, 
+                                      aes(x = time, y = Inftot/10e6*100, 
+                                          color = as.factor(vax_prop*100))
+                                      # linetype = as.factor(vax_prop))
+) + # 
+  geom_line(size = 1.1) +
+  # geom_vline(xintercept = as.numeric(max_Inftot_time_E1_I1_hh1), linetype = "dashed", color = "blue") +
+  # geom_vline(xintercept = as.numeric(max_Inftot_time_E1_I1_hh3), linetype = "dashed", color = "red") +
+  geom_vline(xintercept = 10, linetype = "dashed", color = "black") +
+  facet_grid(EffVax ~ Structure) +
+  # scale_color_grey(start = 0.2, end = 0.6) +
+  # scale_color_manual(values = c("1" = "blue", "3" = "red")) +
+  # scale_y_continuous(trans = "log") +
+  xlim(0, 70) +
+  xlab("Time") +
+  ylab("Infected population (% of total population)") +
+  guides(color = guide_legend(title = "Vaccine coverage (%)",
+                              nrow = 3), 
+         linetype = guide_legend(title = "Vaccine coverage (%)",
+                                 nrow = 1)) +
+  theme_bw(base_size = 20) +
+  theme(strip.background = element_rect(colour="white", fill="white"),
+        strip.text = element_text(hjust = 0, face = "bold", size = 12),
+        # legend.position = c(""),
+        legend.position = c(0.85, 0.90),
+        # legend.position = "bottom",
+        # legend.margin = margin(0, 0, 0, 0),
+        # legend.box.margin=margin(-10,-10,-10,-10)
+        legend.title = element_text(size = 12), 
+        legend.text = element_text(size = 12),
+        legend.key = element_blank())
+gg_epidemic_curve_vax_E1_I1
+ggsave(plot = gg_epidemic_curve_vax_E1_I1, 
+       filename = "figs/Paper/FigA3_epi_curves_vax_E1_I1_calib.pdf", 
+       width = 12, height = 8)
+
+#### Appendix Figure 4 ----
+v_fig_pid_vax_E3_I3_nohh_vs_hh <- df_out_inf_all_summ %>%
+  filter(n_hhsize %in% c(1, 3) & 
+           eff_vax %in% c(0.5, 0.9) & 
+           vax_prop %in% c(0, 0.3, 0.9) & 
+           level_npi %in% c(1.0),
+         r_beta == 0.25 & r_tau == 0.50 & 
+           r_omega == 0.000 & time <= 60 &
+           `Multicompartment structure` %in% c(#"E=1, I=1", 
+                                               "E=3, I=3",
+                                               # "E=3, I=1", 
+                                               # "E=1, I=3",
+                                               NULL) 
+  ) %>%
+  select(pid)
+
+df_epi_curve_vax_E3_I3 <- bind_rows(df_out_inf_all_nhh %>% 
+                                      mutate(Structure = ordered("No HH", 
+                                                                 levels = c("No HH", "HH"))) %>%
+                                      mutate(`Household size` = ordered(1, 
+                                                                        levels = c(1, 3, 5))) %>%
+                                      rename(#Exptot = Exptot_nhh ,
+                                        InfNoDX = InfNoDX_nhh,
+                                        Inftot = Inftot_nhh), 
+                                    df_out_inf_all %>% 
+                                      mutate(Structure = ordered("HH", 
+                                                                 levels = c("No HH", "HH"))) %>%
+                                      filter(n_hhsize ==3, 
+                                             `Multicompartment structure` %in% c(#"E=1, I=1", 
+                                                                                 "E=3, I=3", 
+                                                                                 # "E=3, I=1", 
+                                                                                 # "E=1, I=3",
+                                                                                 NULL))) %>% 
+  filter(pid %in% as.matrix(v_fig_pid_vax_E3_I3_nohh_vs_hh))
+
+gg_epidemic_curve_vax_E3_I3 <- ggplot(df_epi_curve_vax_E3_I3, 
+                                      aes(x = time, y = Inftot/10e6*100, 
+                                          color = as.factor(vax_prop*100))
+                                      # linetype = as.factor(vax_prop))
+) + # 
+  geom_line(size = 1.1) +
+  # geom_vline(xintercept = as.numeric(max_Inftot_time_E1_I1_hh1), linetype = "dashed", color = "blue") +
+  # geom_vline(xintercept = as.numeric(max_Inftot_time_E1_I1_hh3), linetype = "dashed", color = "red") +
+  geom_vline(xintercept = 10, linetype = "dashed", color = "black") +
+  facet_grid(EffVax ~ Structure) +
+  # scale_color_grey(start = 0.2, end = 0.6) +
+  # scale_color_manual(values = c("1" = "blue", "3" = "red")) +
+  # scale_y_continuous(trans = "log") +
+  xlim(0, 70) +
+  xlab("Time") +
+  ylab("Infected population (% of total population)") +
+  guides(color = guide_legend(title = "Vaccine coverage (%)",
+                              nrow = 3), 
+         linetype = guide_legend(title = "Vaccine coverage (%)",
+                                 nrow = 1)) +
+  theme_bw(base_size = 20) +
+  theme(strip.background = element_rect(colour="white", fill="white"),
+        strip.text = element_text(hjust = 0, face = "bold", size = 12),
+        # legend.position = c(""),
+        legend.position = c(0.85, 0.90),
+        # legend.position = "bottom",
+        # legend.margin = margin(0, 0, 0, 0),
+        # legend.box.margin=margin(-10,-10,-10,-10)
+        legend.title = element_text(size = 12), 
+        legend.text = element_text(size = 12),
+        legend.key = element_blank())
+gg_epidemic_curve_vax_E3_I3
+ggsave(plot = gg_epidemic_curve_vax_E3_I3, 
+       filename = "figs/Paper/FigA3_epi_curves_vax_E3_I3_calib.pdf", 
+       width = 12, height = 8)
 
 #### Time of epidemic peak infections ----
 ggplot(df_out_inf_all_control_summ_ref_bias %>% 
