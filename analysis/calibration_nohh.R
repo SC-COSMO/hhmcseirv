@@ -24,7 +24,7 @@ library(foreach)
 # library(ggpattern) # https://coolbutuseless.github.io/2020/04/01/introducing-ggpattern-pattern-fills-for-ggplot/
 # source("R/02_decision_model_functions.R")
 
-# Control measure outputs ----
+# Control measure outputs with Household structure----
 ## Load data ----
 load(file = "output/df_output_doe_mc_seirv_all_control.RData")
 
@@ -40,7 +40,7 @@ df_out_inf_all$PropVax <- paste0("Proportion vaccinated = ", scales::percent(df_
 df_out_inf_all$EffVax  <- paste0("Vaccine effectiveness = ", scales::percent(df_out_inf_all$eff_vax))
 df_out_inf_all$NPIeff <- paste0("NPI effectiveness = ", scales::percent(1-df_out_inf_all$level_npi))
 df_out_inf_all$NPIeff_labels <- ordered(df_out_inf_all$NPIeff,
-                                        unique(df_out_inf_all$NPIeff), c("No NPI", "NPI20", "NPI"))
+                                        unique(df_out_inf_all$NPIeff), c("No NPI", "NPI20", "NPI60"))
 df_out_inf_all$NPIeff_simple <- paste0(scales::percent(1-df_out_inf_all$level_npi))
 df_out_inf_all$`Multicompartment structure` <- paste0("E=", 
                                                       df_out_inf_all$n_exp_states, 
@@ -353,26 +353,27 @@ for(i in 1:n_proj_nhh){ # i <- 1
                                   df_temp)
 }
 
+# Rename variables for pretty plotting format
+df_out_inf_all_nhh$Esize <- paste0("# of E compartments = ", df_out_inf_all_nhh$n_exp_states)
+df_out_inf_all_nhh$Isize <- paste0("# of I compartments = ", df_out_inf_all_nhh$n_inf_states)
+df_out_inf_all_nhh$`Household size` <- ordered(df_out_inf_all_nhh$n_hhsize, unique(df_out_inf_all_nhh$n_hhsize))
+df_out_inf_all_nhh$`Household size labels` <- paste0("Household size = ", df_out_inf_all_nhh$n_hhsize)
+# df_out_inf_all_nhh$n_hhsize <- ordered(df_out_inf_all_nhh$n_hhsize)
+df_out_inf_all_nhh$`Vaccine effectiveness` <- scales::percent(df_out_inf_all_nhh$eff_vax)
+df_out_inf_all_nhh$PropVax <- paste0("Proportion vaccinated = ", scales::percent(df_out_inf_all_nhh$vax_prop))
+df_out_inf_all_nhh$EffVax  <- paste0("Vaccine effectiveness = ", scales::percent(df_out_inf_all_nhh$eff_vax))
+df_out_inf_all_nhh$NPIeff <- paste0("NPI effectiveness = ", scales::percent(1-df_out_inf_all_nhh$level_npi))
+df_out_inf_all_nhh$NPIeff_labels <- ordered(df_out_inf_all_nhh$NPIeff,
+                                                  unique(df_out_inf_all_nhh$NPIeff), c("No NPI", "NPI20", "NPI60"))
+df_out_inf_all_nhh$NPIeff_simple <- paste0(scales::percent(1-df_out_inf_all_nhh$level_npi))
+df_out_inf_all_nhh$`Multicompartment structure` <- paste0("E=", 
+                                                          df_out_inf_all_nhh$n_exp_states, 
+                                                          ", I=", 
+                                                          df_out_inf_all_nhh$n_inf_states)
+
 df_out_inf_all_nhh_noint <- df_out_inf_all_nhh %>% 
   filter(vax_prop == 0,
          level_npi == 1)
-# Rename variables for pretty plotting format
-df_out_inf_all_nhh_noint$Esize <- paste0("# of E compartments = ", df_out_inf_all_nhh_noint$n_exp_states)
-df_out_inf_all_nhh_noint$Isize <- paste0("# of I compartments = ", df_out_inf_all_nhh_noint$n_inf_states)
-df_out_inf_all_nhh_noint$`Household size` <- ordered(df_out_inf_all_nhh_noint$n_hhsize, unique(df_out_inf_all_nhh_noint$n_hhsize))
-df_out_inf_all_nhh_noint$`Household size labels` <- paste0("Household size = ", df_out_inf_all_nhh_noint$n_hhsize)
-# df_out_inf_all_nhh_noint$n_hhsize <- ordered(df_out_inf_all_nhh_noint$n_hhsize)
-df_out_inf_all_nhh_noint$`Vaccine effectiveness` <- scales::percent(df_out_inf_all_nhh_noint$eff_vax)
-df_out_inf_all_nhh_noint$PropVax <- paste0("Proportion vaccinated = ", scales::percent(df_out_inf_all_nhh_noint$vax_prop))
-df_out_inf_all_nhh_noint$EffVax  <- paste0("Vaccine effectiveness = ", scales::percent(df_out_inf_all_nhh_noint$eff_vax))
-df_out_inf_all_nhh_noint$NPIeff <- paste0("NPI effectiveness = ", scales::percent(1-df_out_inf_all_nhh_noint$level_npi))
-df_out_inf_all_nhh_noint$NPIeff_labels <- ordered(df_out_inf_all_nhh_noint$NPIeff,
-                                        unique(df_out_inf_all_nhh_noint$NPIeff), c("No NPI"))
-df_out_inf_all_nhh_noint$NPIeff_simple <- paste0(scales::percent(1-df_out_inf_all_nhh_noint$level_npi))
-df_out_inf_all_nhh_noint$`Multicompartment structure` <- paste0("E=", 
-                                                      df_out_inf_all_nhh_noint$n_exp_states, 
-                                                      ", I=", 
-                                                      df_out_inf_all_nhh_noint$n_inf_states)
 
 df_out_inf_all_nhh_noint_summ <- df_out_inf_all_nhh_noint %>%
   group_by(pid) %>%
@@ -391,7 +392,7 @@ df_out_inf_all_nhh_noint_summ <- df_out_inf_all_nhh_noint %>%
   slice_head() %>%
   ungroup()
 
-# Control measures outputs ----
+# Control measures outputs with Household structure ----
 ## Load data ----
 load(file = "output/df_output_doe_mc_seirv_all_control.RData")
 
@@ -407,7 +408,7 @@ df_out_inf_all$PropVax <- paste0("Proportion vaccinated = ", scales::percent(df_
 df_out_inf_all$EffVax  <- paste0("Vaccine effectiveness = ", scales::percent(df_out_inf_all$eff_vax))
 df_out_inf_all$NPIeff <- paste0("NPI effectiveness = ", scales::percent(1-df_out_inf_all$level_npi))
 df_out_inf_all$NPIeff_labels <- ordered(df_out_inf_all$NPIeff,
-                                        unique(df_out_inf_all$NPIeff), c("No NPI", "NPI20", "NPI"))
+                                        unique(df_out_inf_all$NPIeff), c("No NPI", "NPI20", "NPI60"))
 df_out_inf_all$NPIeff_simple <- paste0(scales::percent(1-df_out_inf_all$level_npi))
 df_out_inf_all$`Multicompartment structure` <- paste0("E=", 
                                                       df_out_inf_all$n_exp_states, 
@@ -436,9 +437,11 @@ df_out_inf_all_summ <- df_out_inf_all %>%
 
 # Combine no HH structure projections with natural history projections ----
 df_out_inf_all_biased_noint_summ <- df_out_inf_all_nhh_noint_summ %>%
-  right_join(df_out_inf_all_summ %>% filter(n_hhsize > 1, 
-                                            vax_prop == 0,
-                                            level_npi == 1), 
+  select(-n_hhsize, -r_beta, -r_tau, -`Household size`, -`Household size labels`) %>%
+  right_join(df_out_inf_all_summ %>% 
+               filter(n_hhsize > 1, 
+                      vax_prop == 0,
+                      level_npi == 1), 
              by = "pid") %>%
   mutate(max_Inftot_diff = max_Inftot_nhh - max_Inftot,
          max_Inftot_time_diff = max_Inftot_nhh_time - max_Inftot_time,
@@ -540,57 +543,494 @@ gg_epidemic_curve_nohh_vs_hh <- ggplot(df_fig_nohh_vs_hh,
         legend.text = element_text(size = 12),
         legend.key = element_blank())
 gg_epidemic_curve_nohh_vs_hh
+ggsave(plot = gg_epidemic_curve_nohh_vs_hh, 
+       filename = "figs/Paper/Fig2_natural_history_curves_NoHH_HH.pdf", 
+       width = 12, height = 8)
 
 # Metaregression ----
 ## Without interactions
-fit_hh_peak_time_bias_rel_nhh <- lm(max_Inftot_time_diff_perc ~ n_exp_states + 
-                                      n_inf_states + 
+fit_hh_peak_time_bias_rel_nhh <- lm(max_Inftot_time_diff_perc ~ n_exp_states.x + 
+                                      n_inf_states.x + 
                                       n_hhsize + 
                                       r_tau + r_beta, 
                                     data = df_out_inf_all_biased_noint_summ %>% 
                                       filter(max_Inftot_time_diff_perc != Inf))
 summary(fit_hh_peak_time_bias_rel_nhh)
 
-fit_hh_peak_size_bias_rel_nhh <- lm(max_Inftot_diff_perc ~ n_exp_states + 
-                                      n_inf_states + 
+fit_hh_peak_size_bias_rel_nhh <- lm(max_Inftot_diff_perc ~ n_exp_states.x + 
+                                      n_inf_states.x + 
                                       n_hhsize + 
                                       r_tau + r_beta,
                                     data = df_out_inf_all_biased_noint_summ)
 summary(fit_hh_peak_size_bias_rel_nhh)
 
-fit_hh_epidemic_size_rel_nhh <- lm(CumInfTot_diff_perc ~ n_exp_states + 
-                                     n_inf_states + 
+fit_hh_epidemic_size_rel_nhh <- lm(CumInfTot_diff_perc ~ n_exp_states.x + 
+                                     n_inf_states.x + 
                                      n_hhsize +
                                      r_tau + r_beta, 
                                    data = df_out_inf_all_biased_noint_summ)
 summary(fit_hh_epidemic_size_rel_nhh)
 
 ## With interactions
-fit_hh_peak_time_bias_rel_nhh <- lm(max_Inftot_time_diff_perc ~ n_exp_states*n_inf_states + 
-                                      n_exp_states*n_hhsize + 
-                                      n_inf_states*n_hhsize + 
+fit_hh_peak_time_bias_rel_nhh_int <- lm(max_Inftot_time_diff_perc ~ n_exp_states.x*n_inf_states.x + 
+                                      n_exp_states.x*n_hhsize + 
+                                      n_inf_states.x*n_hhsize + 
                                       r_tau + r_beta, 
                                     data = df_out_inf_all_biased_noint_summ %>% 
                                       filter(max_Inftot_time_diff_perc != Inf))
-summary(fit_hh_peak_time_bias_rel_nhh)
+summary(fit_hh_peak_time_bias_rel_nhh_int)
 
-fit_hh_peak_size_bias_rel_nhh <- lm(max_Inftot_diff_perc ~ n_exp_states*n_inf_states + 
-                                      n_exp_states*n_hhsize + 
-                                      n_inf_states*n_hhsize +
+fit_hh_peak_size_bias_rel_nhh_int <- lm(max_Inftot_diff_perc ~ n_exp_states.x*n_inf_states.x + 
+                                      n_exp_states.x*n_hhsize + 
+                                      n_inf_states.x*n_hhsize +
                                       r_tau + r_beta,
                                     data = df_out_inf_all_biased_noint_summ)
-summary(fit_hh_peak_size_bias_rel_nhh)
+summary(fit_hh_peak_size_bias_rel_nhh_int)
 
-fit_hh_epidemic_size_rel_nhh <- lm(CumInfTot_diff_perc ~ n_exp_states*n_inf_states + 
-                                     n_exp_states*n_hhsize + 
-                                     n_inf_states*n_hhsize + 
+fit_hh_epidemic_size_rel_nhh_int <- lm(CumInfTot_diff_perc ~ n_exp_states.x*n_inf_states.x + 
+                                     n_exp_states.x*n_hhsize + 
+                                     n_inf_states.x*n_hhsize + 
                                      r_tau + r_beta, 
                                    data = df_out_inf_all_biased_noint_summ)
-summary(fit_hh_epidemic_size_rel_nhh)
+summary(fit_hh_epidemic_size_rel_nhh_int)
 
+stargazer(fit_hh_peak_time_bias_rel_nhh, fit_hh_peak_time_bias_rel_nhh_int,
+          fit_hh_peak_size_bias_rel_nhh, fit_hh_peak_size_bias_rel_nhh_int, 
+          fit_hh_epidemic_size_rel_nhh, fit_hh_epidemic_size_rel_nhh_int, 
+          type = "text", # latex 
+          title = "Metaregression estimates",
+          column.labels = c("Peak time", "Peak size", "Epidemic size"), 
+          column.separate = c(2, 2, 2), 
+          dep.var.caption = "", 
+          dep.var.labels.include = FALSE, 
+          covariate.labels = c("E", "I", "Household size (HH)", "$\\tau$", "$\\beta$", "$\\omega$", "E*I", "E*HH", "I*HH"), 
+          model.numbers = FALSE,
+          omit.stat = c("all"), report = c("vc*"),
+          align = TRUE) 
+stargazer(fit_hh_peak_time_bias_rel_nhh, fit_hh_peak_time_bias_rel_nhh_int,
+          fit_hh_peak_size_bias_rel_nhh, fit_hh_peak_size_bias_rel_nhh_int, 
+          fit_hh_epidemic_size_rel_nhh, fit_hh_epidemic_size_rel_nhh_int,
+          type = "latex",  
+          out =  "output/Table3_metaregression_bias.tex",
+          title = "Metaregression estimates",
+          column.labels = c("Peak time", "Peak size", "Epidemic size"), 
+          column.separate = c(2, 2, 2), 
+          dep.var.caption = "", 
+          dep.var.labels.include = FALSE, 
+          covariate.labels = c("E", "I", "Household size (HH)", "$\\tau$", "$\\beta$", "$\\omega$", "E*I", "E*HH", "I*HH"), 
+          model.numbers = FALSE,
+          omit.stat = c("all"), report = c("vc*"),
+          align = TRUE) 
 #* 1. summarize the biased projections
 #* 2. Join in the true summarized projections with HH
 #* 3. Compute biases 
 #* 4. Visualize biases
 #* 5. Metaregress biases
 #* 6. Do similar things for intervention effects
+
+# Control measure outputs on No HH dataset----
+df_out_inf_all_nhh
+
+## Summarize output ----
+df_out_inf_all_control_nhh_summ <- df_out_inf_all_nhh %>%
+  group_by(pid) %>% # ,  n_exp_states, n_inf_states
+  mutate(# Find the t at which I(t) is at its max
+    # ref_category = ifelse(n_hhsize == 1, 
+    #                       1, 0), # Define HH=1 as reference category
+    # ref_category_bias = ifelse(n_hhsize == 1 & n_exp_states == 1 & n_inf_states == 1.0, 
+    #                            1, 0), # n_hhsize = 1, E = 1, I =1 as reference category to estimate bias of control measures' effect
+    ref_category_nathist = ifelse(level_npi == 1 & vax_prop == 0 & eff_vax == 1.0, 
+                                  1, 0), # Natural history as reference category to estimate control measures' effectiveness on other parameters
+    max_Inftot_nhh = max(Inftot_nhh),
+    max_Inftot_nhh_time = time[which.max(Inftot_nhh)],
+    # Find times at which I(t) is at a percentage of its max
+    p05_Inftot_nhh_time = max(time[which(Inftot_nhh <= max_Inftot_nhh*0.05 & time < max_Inftot_nhh_time)]),
+    p10_Inftot_nhh_time = max(time[which(Inftot_nhh <= max_Inftot_nhh*0.10 & time < max_Inftot_nhh_time)]),
+    p25_Inftot_nhh_time = max(time[which(Inftot_nhh <= max_Inftot_nhh*0.25 & time < max_Inftot_nhh_time)]),
+    p50_Inftot_nhh_time = max(time[which(Inftot_nhh <= max_Inftot_nhh*0.50 & time < max_Inftot_nhh_time)]),
+    # Find times at which x number of IDX(t) are seen
+    IDX500_nhh_time = max(time[which((Inftot_nhh-InfNoDX_nhh) <= 500 & time < max_Inftot_nhh_time)]),
+    IDX100_nhh_time = max(time[which((Inftot_nhh-InfNoDX_nhh) <= 100 & time < max_Inftot_nhh_time)]),
+    CumInfTot_nhh = sum(Inftot_nhh)) %>%
+  # arrange(-ref_category_nathist) %>%
+  slice_head() %>%
+  ungroup() %>%
+  group_by(n_hhsize, r_beta, r_tau, r_omega, n_exp_states, n_inf_states) %>%
+  mutate(
+    pid_nathist = max(pid*ref_category_nathist)
+    ) %>%
+  ungroup()
+
+## Calculate  differential outcomes compared to reference category (Group by parameter set) ----
+# Create a data.frame with only reference category (ie, hhsize = 1)
+df_out_inf_all_nathist_nhh_summ <- df_out_inf_all_control_nhh_summ %>%
+  filter(ref_category_nathist == 1) %>%
+  rename(max_Inftot_nhh_nathist = max_Inftot_nhh,
+         max_Inftot_nhh_time_nathist = max_Inftot_nhh_time,
+         CumInfTot_nhh_nathist = CumInfTot_nhh) %>%
+  select(pid, pid_nathist, n_hhsize, n_exp_states, n_inf_states,
+         r_beta, r_tau, r_omega, 
+         max_Inftot_nhh_nathist, max_Inftot_nhh_time_nathist, CumInfTot_nhh_nathist)
+
+# Compute differential outcomes compared to reference category (Group by parameter set)
+df_out_inf_all_control_nathist_nhh_summ <- df_out_inf_all_control_nhh_summ %>%
+  left_join(df_out_inf_all_nathist_nhh_summ, by = c("pid_nathist")) %>%
+  mutate(max_Inftot_diff_nhh = max_Inftot_nhh - max_Inftot_nhh_nathist,
+         max_Inftot_time_diff_nhh = max_Inftot_nhh_time - max_Inftot_nhh_time_nathist,
+         CumInfTot_diff_nhh = CumInfTot_nhh - CumInfTot_nhh_nathist,
+         # Percentage changes
+         max_Inftot_diff_perc_nhh = (max_Inftot_diff_nhh/max_Inftot_nhh_nathist)*100,
+         max_Inftot_time_diff_perc_nhh = (max_Inftot_time_diff_nhh/max_Inftot_nhh_time_nathist)*100,
+         CumInfTot_diff_perc_nhh = (CumInfTot_diff_nhh/CumInfTot_nhh_nathist)*100) %>%
+  rename(pid = pid.x)
+
+
+## Wrangle data for dataset with Household structure
+### Summarize output ----
+df_out_inf_all_control_summ <- df_out_inf_all %>%
+  filter(n_hhsize > 1) %>%
+  group_by(pid) %>% # ,  n_exp_states, n_inf_states
+  mutate(# Find the t at which I(t) is at its max
+    ref_category_nathist = ifelse(level_npi == 1 & vax_prop == 0 & eff_vax == 1.0, 
+                                  1, 0), # Natural history as reference category to estimate control measures' effectiveness on other parameters
+    max_Inftot = max(Inftot),
+    max_Inftot_time = time[which.max(Inftot)],
+    # Find times at which I(t) is at a percentage of its max
+    p05_Inftot_time = max(time[which(Inftot <= max_Inftot*0.05 & time < max_Inftot_time)]),
+    p10_Inftot_time = max(time[which(Inftot <= max_Inftot*0.10 & time < max_Inftot_time)]),
+    p25_Inftot_time = max(time[which(Inftot <= max_Inftot*0.25 & time < max_Inftot_time)]),
+    p50_Inftot_time = max(time[which(Inftot <= max_Inftot*0.50 & time < max_Inftot_time)]),
+    # Find times at which x number of IDX(t) are seen
+    IDX500_time = max(time[which((Inftot-InfNoDX) <= 500 & time < max_Inftot_time)]),
+    IDX100_time = max(time[which((Inftot-InfNoDX) <= 100 & time < max_Inftot_time)]),
+    CumInfTot = sum(Inftot)) %>%
+  # arrange(-ref_category_nathist) %>%
+  slice_head() %>%
+  ungroup() %>%
+  group_by(n_hhsize, r_beta, r_tau, r_omega, n_exp_states, n_inf_states) %>%
+  mutate(
+    pid_nathist = max(pid*ref_category_nathist)
+  ) %>%
+  ungroup()
+
+## Calculate  differential outcomes compared to reference category (Group by parameter set) ----
+# Create a data.frame with only reference category (ie, hhsize = 1)
+df_out_inf_all_control_summ_nathist <- df_out_inf_all_control_summ %>%
+  filter(ref_category_nathist == 1) %>%
+  rename(max_Inftot_nathist = max_Inftot,
+         max_Inftot_time_nathist = max_Inftot_time,
+         CumInfTot_nathist = CumInfTot) %>%
+  select(pid, pid_nathist, n_hhsize, n_exp_states, n_inf_states,
+         r_beta, r_tau, r_omega, 
+         max_Inftot_nathist, max_Inftot_time_nathist, CumInfTot_nathist)
+
+# Compute differential outcomes compared to reference category (Group by parameter set)
+df_out_inf_all_control_nathist_summ <- df_out_inf_all_control_summ %>%
+  left_join(df_out_inf_all_control_summ_nathist, by = "pid_nathist") %>%
+  mutate(max_Inftot_diff = max_Inftot - max_Inftot_nathist,
+         max_Inftot_time_diff = max_Inftot_time - max_Inftot_time_nathist,
+         CumInfTot_diff = CumInfTot - CumInfTot_nathist,
+         # Percentage changes
+         max_Inftot_diff_perc = (max_Inftot_diff/max_Inftot_nathist)*100,
+         max_Inftot_time_diff_perc = (max_Inftot_time_diff/max_Inftot_time_nathist)*100,
+         CumInfTot_diff_perc = (CumInfTot_diff/CumInfTot_nathist)*100) %>%
+  rename(pid = pid.x)
+
+
+
+## Calculate bias for all models compared bias to reference category (Group by model characteristics) ----
+# Create a data.frame with only reference category (ie, hhsize = 1, e =1, i = 1)
+df_out_inf_all_control_summ_ref_bias <- df_out_inf_all_control_nathist_nhh_summ %>%
+  left_join(df_out_inf_all_control_nathist_summ, by = "pid") %>%
+  mutate(# Absolute bias
+    max_Inftot_diff_bias_abs = max_Inftot_diff_nhh - max_Inftot_diff,
+    max_Inftot_time_diff_bias_abs = max_Inftot_time_diff_nhh - max_Inftot_time_diff,
+    CumInfTot_diff_bias_abs = CumInfTot_diff_nhh - CumInfTot_diff,
+    # Relative bias
+    max_Inftot_diff_bias_rel = 100 * max_Inftot_diff_bias_abs/max_Inftot_diff,
+    max_Inftot_time_diff_bias_rel = 100 * max_Inftot_time_diff_bias_abs/max_Inftot_time_diff,
+    CumInfTot_diff_bias_rel = 100 * CumInfTot_diff_bias_abs/CumInfTot_diff) %>%
+  rename(pid_nathist = pid_nathist.y,
+         vax_prop = vax_prop.x, 
+         level_npi = level_npi.x, 
+         eff_vax = eff_vax.x,
+         n_hhsize = n_hhsize.y.y,
+         r_beta = r_beta.y.y, 
+         r_tau = r_tau.y.y, 
+         r_omega = r_omega.y.y,
+         n_exp_states = n_exp_states.y.y,
+         n_inf_states = n_inf_states.y.y,
+         Esize = Esize.y,
+         Isize = Isize.y,
+         PropVax = PropVax.y,
+         EffVax = EffVax.y,
+         NPIeff = NPIeff.y,
+         NPIeff_labels = NPIeff_labels.y,
+         NPIeff_simple = NPIeff_simple.y,
+         `Multicompartment structure` = `Multicompartment structure.y`,
+         `Household size` = `Household size.y`,
+         `Household size labels` = `Household size labels.y`,
+         `Vaccine effectiveness` = `Vaccine effectiveness.y`) %>%
+  select(pid, pid_nathist,
+         n_hhsize,
+         r_beta, r_tau, r_omega, 
+         vax_prop, level_npi, eff_vax,
+         n_exp_states, n_inf_states,
+         Esize, Isize,
+         PropVax, EffVax, NPIeff,
+         NPIeff_labels, NPIeff_simple,
+         `Multicompartment structure`,
+         `Household size`, `Household size labels`,
+         `Vaccine effectiveness`,
+         max_Inftot_diff_bias_abs, max_Inftot_time_diff_bias_abs, CumInfTot_diff_bias_abs, 
+         max_Inftot_diff_bias_rel, max_Inftot_time_diff_bias_rel, CumInfTot_diff_bias_rel)
+
+### Control measures' effects ----
+# Format data for plotting
+df_control_measures_E1_I1_E3_I3_hh <- df_out_inf_all_control_summ %>% 
+  filter(r_beta == 0.25 & r_tau == 0.40 & r_omega == 0.000 & time <= 70 & 
+           ((`Multicompartment structure` %in% c("E=3, I=3") & n_hhsize %in% c(3))) & 
+           eff_vax %in% c(1.0) & vax_prop == 0.0, level_npi %in% c(0.4, 1.0)) %>%
+  mutate(`Natural history structure`  = paste0(`Multicompartment structure`, " & HH = ", n_hhsize),
+         NPIeff_labels = c("No NPI", "NPI60")) %>%
+  select(`Multicompartment structure`, n_hhsize, level_npi, max_Inftot, pid_nathist,
+         `Natural history structure`, NPIeff, NPIeff_labels)
+
+df_control_measures_E1_I1_E3_I3_nhh <- df_out_inf_all_control_nathist_nhh_summ %>%
+  filter(pid_nathist == df_control_measures_E1_I1_E3_I3_hh$pid_nathist[1]  & 
+           eff_vax %in% c(1.0) & vax_prop == 0.0, level_npi %in% c(0.4, 1.0)) %>%
+  rename(n_hhsize = n_hhsize.x) %>%
+  mutate(`Natural history structure`  = paste0(`Multicompartment structure`, " & HH = ", n_hhsize),
+         NPIeff_labels = c("No NPI", "NPI60")) %>%
+  select(`Multicompartment structure`, n_hhsize, level_npi, max_Inftot_nhh, pid_nathist,
+         `Natural history structure`, NPIeff, NPIeff_labels) %>%
+  rename(max_Inftot = max_Inftot_nhh)
+
+df_control_measures_E1_I1_E3_I3 <- bind_rows(df_control_measures_E1_I1_E3_I3_hh,
+                                             df_control_measures_E1_I1_E3_I3_nhh)
+
+df_control_measures_E1_I1_E3_I3 
+
+#### Figure 3: Differential effect on control measures' effects BIAS ----
+png(file = "figs/Paper/Fig3_exemplary_bias.png", width = 960, height = 960*0.8)
+delta_hh  <- (df_control_measures_E1_I1_E3_I3$max_Inftot[2] - df_control_measures_E1_I1_E3_I3$max_Inftot[1])
+delta_nhh <- (df_control_measures_E1_I1_E3_I3$max_Inftot[4] - df_control_measures_E1_I1_E3_I3$max_Inftot[3])
+rbias_fig3 <- (delta_nhh-delta_hh)/delta_hh
+gg_control_measures_E1_I1_E3_I3 <- ggplot(df_control_measures_E1_I1_E3_I3,
+                                          aes(x = `Natural history structure`, y = max_Inftot,
+                                              group = NPIeff, fill = NPIeff_labels)) +
+  geom_col(width = 0.5, position = position_dodge(0.5)) +
+  # scale_fill_grey("Intervention") +
+  scale_fill_manual("Intervention", values = c("No NPI" = "darkgreen", "NPI60" = "darkred")) + 
+  scale_y_continuous("Peak size (thousands)", breaks = seq(0, 700000, by = 100000),
+                     labels = function(x) round(x/1000, digits = 0), 
+                     limits = c(0, 700000)) +
+  scale_x_discrete() + 
+  geom_bracket(y.position = 600*1000, label = "O[NH]", type = "expression", 
+               xmin = 0.7, 
+               xmax = 1.3, inherit.aes = FALSE, ) +
+  geom_bracket(y.position = 580*1000, label = "O[HH]", type = "expression", 
+               xmin = 1.7, 
+               xmax = 2.3, inherit.aes = FALSE) +
+  # xlab("Household size") +
+  theme_bw(base_size = 20) +
+  # coord_flip() +
+  theme(strip.background = element_rect(colour="white", fill="white"),
+        strip.text = element_text(hjust = 0, face = "bold", size = 12),
+        axis.title.x=element_blank(),
+        legend.position = c(0.5, 0.3),
+        # legend.position = "bottom",
+        # legend.margin = margin(0, 0, 0, 0),
+        # legend.box.margin=margin(-10,-10,-10,-10)
+        legend.key = element_blank())
+gg_control_measures_E1_I1_E3_I3
+## First pair of brackets
+grid.brackets(#x1 = 180, x2 = 180, 
+              #y1 = 60, y2 = 95,
+              x1 = 430, x2 = 430, 
+              y1 = 150, y2 = 285, 
+              lwd = 1)
+grid.text(x = unit(470, "native"), y = unit(223, "native"),
+          label = expression(paste(Delta, O[NH])), hjust = 0, vjust=0)
+## Second pair of brackets
+grid.brackets(x1 = 830, x2 = 830, 
+              y1 = 170, y2 = 275, 
+              lwd = 1)
+grid.text(x = unit(870, "native"), y = unit(230, "native"),
+          label = expression(paste(Delta, O[HH])), hjust = 0, vjust=0)
+
+grid.text(x = unit(100, "native"), y = unit(75, "native"),
+          label =  expression(paste("rBias = ", 
+                                    frac(paste(Delta, O[NH]) - paste(Delta, O[HH]), 
+                                         paste(Delta, O[HH])
+                                    )%*%100, " = 31%")
+          ), 
+          hjust = 0, vjust=0)
+dev.off()
+
+#### Maximum infections ----
+alphas <- c("# of I compartments = 1" = 0.4, 
+            "# of I compartments = 2" = 0.7, 
+            "# of I compartments = 3" = 1.0)
+gg_peak_size_bias_rel <- ggplot(df_out_inf_all_control_summ_ref_bias %>% 
+         filter(r_beta == 0.25 & r_tau == 0.40 & r_omega == 0.000 & 
+                  n_hhsize %in% c(3, 5) &
+                  eff_vax %in% c(1.0) & vax_prop == 0.0, level_npi != 1), 
+       aes(x =`Household size`, y = max_Inftot_diff_bias_rel, 
+           group = Isize, alpha = Isize, fill = Esize)) +
+  geom_bar(stat = "identity", position = position_dodge(0.8)) +
+  facet_grid(NPIeff ~ Esize) +
+  scale_y_continuous(breaks = seq(-20, 50, by = 5)) +
+  scale_fill_discrete(l = 50) +
+  scale_alpha_manual(values = alphas) +
+  ylab("Relative bias on peak size (%)") +
+  theme_bw(base_size = 20) +
+  theme(strip.background = element_rect(colour="white", fill="white"),
+        strip.text = element_text(hjust = 0, face = "bold", size = 12),
+        legend.position = c(.84, .88),
+        legend.title = element_blank(),
+        legend.background = element_blank(),
+        legend.key = element_blank(),
+        legend.spacing.y = unit(-0.25, "cm"))
+gg_peak_size_bias_rel
+ggsave(plot = gg_peak_size_bias_rel, 
+       filename = "figs/Paper/Fig4_control_measures_peak_size_bias_rel.pdf", 
+       width = 12, height = 8)
+ggsave(plot = gg_peak_size_bias_rel, 
+       filename = "figs/Paper/Fig4_control_measures_peak_size_bias_rel.png", 
+       width = 12, height = 8)
+ggsave(plot = gg_peak_size_bias_rel, 
+       filename = "figs/Paper/Fig4_control_measures_peak_size_bias_rel.jpeg", 
+       width = 12, height = 8) 
+
+my_png <- readPNG(source = "figs/Paper/Fig3_exemplary_bias.png", native = TRUE)
+gg_exemplary_bias <- ggplot() + 
+  background_image(raster.img = my_png)
+gg_exemplary_bias
+
+fig3 <- ggarrange(gg_exemplary_bias, gg_peak_size_bias_rel,
+                  labels = c("A)", "B)"),
+                  ncol = 2, nrow = 1,
+                  hjust = 0, vjust = 1.5,
+                  font.label=list(color = "black", size = 16))
+
+ggsave(plot = fig3, 
+       filename = "figs/Paper/Fig3.pdf", 
+       width = 24, height = 10)
+
+#### Time of epidemic peak infections ----
+ggplot(df_out_inf_all_control_summ_ref_bias %>% 
+         filter(r_beta == 0.25 & r_tau == 0.40 & r_omega == 0.000 & 
+                  n_hhsize %in% c(3, 5) &
+                  eff_vax %in% c(1.0) & vax_prop == 0.0, level_npi != 1), 
+       aes(x =`Household size`, y = max_Inftot_time_diff_bias_rel, 
+           group = Isize, alpha = Isize, fill = Esize)) +
+  geom_bar(stat = "identity", position = position_dodge(0.8)) +
+  facet_grid(NPIeff ~ Esize) +
+  scale_fill_discrete(l = 50) +
+  scale_alpha_manual(values = alphas) +
+  ylab("Relative bias on peak time (%)") +
+  theme_bw(base_size = 20) +
+  theme(strip.background = element_rect(colour="white", fill="white"),
+        strip.text = element_text(hjust = 0, face = "bold", size = 12),
+        legend.position = c(.84, .86),
+        legend.title = element_blank(),
+        legend.background = element_blank(),
+        legend.key = element_blank())
+
+#### Epidemic Size ----
+ggplot(df_out_inf_all_control_summ_ref_bias %>% 
+         filter(r_beta == 0.25 & r_tau == 0.40 & r_omega == 0.000 & 
+                  n_hhsize %in% c(3, 5) &
+                  eff_vax %in% c(1.0) & vax_prop == 0.0, level_npi != 1), 
+       aes(x =`Household size`, y = CumInfTot_diff_bias_rel, 
+           group = Isize, alpha = Isize, fill = Esize)) +
+  geom_bar(stat = "identity", position = position_dodge(0.8)) +
+  facet_grid(NPIeff ~ Esize) +
+  scale_fill_discrete(l = 50) +
+  scale_alpha_manual(values = alphas) +
+  ylab("Relative bias on epidemic size (%)") +
+  theme_bw(base_size = 20) +
+  theme(strip.background = element_rect(colour="white", fill="white"),
+        strip.text = element_text(hjust = 0, face = "bold", size = 12),
+        legend.position = c(.84, .86),
+        legend.title = element_blank(),
+        legend.background = element_blank(),
+        legend.key = element_blank())
+
+### Table 3: Meta regression on category-specific outcomes on Control Measures NPI 60% reduction ----
+df_out_inf_all_control_summ_ref_bias_metareg <- df_out_inf_all_control_summ_ref_bias %>% 
+  filter(r_omega == 0.000 & 
+           !((`Multicompartment structure` %in% c("E=1, I=1") & n_hhsize %in% c(1))) & 
+           eff_vax %in% c(1.0) & vax_prop == 0.0, level_npi %in% c(0.4)) 
+
+## Without interactions
+fit_hh_peak_time_bias_rel <- lm(max_Inftot_time_diff_bias_rel ~ n_exp_states + n_inf_states + 
+                                  n_hhsize + 
+                                  r_tau + r_beta, 
+                                data = df_out_inf_all_control_summ_ref_bias_metareg %>% 
+                                  filter(max_Inftot_time_diff_bias_rel != Inf))
+summary(fit_hh_peak_time_bias_rel)
+
+fit_hh_peak_size_bias_rel <- lm(max_Inftot_diff_bias_rel ~ n_exp_states + n_inf_states + 
+                                  n_hhsize + 
+                                  r_tau + r_beta,
+                                data = df_out_inf_all_control_summ_ref_bias_metareg)
+summary(fit_hh_peak_size_bias_rel)
+
+fit_hh_epidemic_size_rel <- lm(CumInfTot_diff_bias_rel ~ n_exp_states + n_inf_states + 
+                                 n_hhsize + r_tau + r_beta, 
+                               data = df_out_inf_all_control_summ_ref_bias_metareg)
+summary(fit_hh_epidemic_size_rel)
+
+## With interactions
+fit_hh_peak_time_bias_rel_int <- lm(max_Inftot_time_diff_bias_rel ~ n_exp_states*n_inf_states + 
+                                      n_exp_states*n_hhsize + 
+                                      n_inf_states*n_hhsize + 
+                                      r_tau + r_beta, 
+                                    data = df_out_inf_all_control_summ_ref_bias_metareg %>% 
+                                      filter(max_Inftot_time_diff_bias_rel != Inf))
+summary(fit_hh_peak_time_bias_rel_int)
+
+fit_hh_peak_size_bias_rel_int <- lm(max_Inftot_diff_bias_rel ~ n_exp_states*n_inf_states + 
+                                      n_exp_states*n_hhsize + 
+                                      n_inf_states*n_hhsize +
+                                      r_tau + r_beta,
+                                    data = df_out_inf_all_control_summ_ref_bias_metareg)
+summary(fit_hh_peak_size_bias_rel_int)
+
+fit_hh_epidemic_size_rel_int <- lm(CumInfTot_diff_bias_rel ~ n_exp_states*n_inf_states + 
+                                     n_exp_states*n_hhsize + 
+                                     n_inf_states*n_hhsize + 
+                                     r_tau + r_beta, 
+                                   data = df_out_inf_all_control_summ_ref_bias_metareg)
+summary(fit_hh_epidemic_size_rel_int)
+
+stargazer(fit_hh_peak_time_bias_rel, fit_hh_peak_time_bias_rel_int,
+          fit_hh_peak_size_bias_rel, fit_hh_peak_size_bias_rel_int,
+          fit_hh_epidemic_size_rel, fit_hh_epidemic_size_rel_int,
+          type = "text", 
+          title = "Metaregression estimates",
+          column.labels = c("Peak time", "Peak size", "Epidemic size"), 
+          column.separate = c(2, 2, 2), 
+          dep.var.caption = "", 
+          dep.var.labels.include = FALSE, 
+          covariate.labels = c("E", "I", "Household size (HH)", "$\\tau$", "$\\beta$", "E*I", "E*HH", "I*HH"), # 
+          model.numbers = FALSE,
+          omit.stat = c("all"), report = c("vc*"),
+          align = TRUE)
+
+stargazer(fit_hh_peak_time_bias_rel, fit_hh_peak_time_bias_rel_int,
+          fit_hh_peak_size_bias_rel, fit_hh_peak_size_bias_rel_int,
+          fit_hh_epidemic_size_rel, fit_hh_epidemic_size_rel_int,
+          type = "latex", 
+          out = "output/Table3_metaregression_bias.tex", 
+          title = "Metaregression estimates",
+          column.labels = c("Peak time", "Peak size", "Epidemic size"), 
+          column.separate = c(2, 2, 2), 
+          dep.var.caption = "", 
+          dep.var.labels.include = FALSE, 
+          covariate.labels = c("E", "I", "Household size (HH)", "$\\tau$", "$\\beta$", "E*I", "E*HH", "I*HH"), # 
+          model.numbers = FALSE,
+          omit.stat = c("all"), report = c("vc*"),
+          align = TRUE)
