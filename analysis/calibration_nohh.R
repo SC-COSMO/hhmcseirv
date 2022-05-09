@@ -470,7 +470,7 @@ df_fig_nohh_vs_hh <-  bind_rows(df_out_inf_all_nhh_noint %>%
                                   mutate(`Household size` = ordered(1, 
                                                                     levels = c(1, 3, 5)),
                                          `NPIeff_labels` = ordered("No NPI", 
-                                                                   levels = c("No NPI", "NPI20", "NPI"))) %>%
+                                                                   levels = c("No NPI", "NPI20", "NPI60"))) %>%
                                   rename(#Exptot = Exptot_nhh ,
                                          InfNoDX = InfNoDX_nhh,
                                          Inftot = Inftot_nhh), 
