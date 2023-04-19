@@ -12,12 +12,6 @@ hh_mc_seir <- function(l_params_all){
                                                   func = hh_mc_seir_dx,
                                                   parms = l_params_all))
   
-  # df_out_cosmo <- as.data.frame(deSolve::ode(y = l_params_all$v_states_init, 
-  #                                            times = l_params_all$v_times, 
-  #                                            func = ifelse(l_params_all$comp, 
-  #                                                          yes = cosmo_dXdt_comp, 
-  #                                                          no = cosmo_dxdt), 
-  #                                            parms = l_params_all))
   l_out_hh_mc_seir <- list(df_out_hh_mc_seir = df_out_hh_mc_seir,
                            l_params_all = l_params_all)
   return(l_out_hh_mc_seir)
@@ -55,7 +49,6 @@ hh_mc_seir_out <- function(parameters){
     
     #### Naming vectors ####
     v_hh_names <- as.matrix(tidyr::unite(df_possibilities, col = "names", sep = ""))
-    # paste("HH",m_possibilities[, 1:n_states], m_possibilities[,2], sep = "")
     ### Names of household members by class names
     v_names_hh  <- paste("HH", v_hh_names, sep = "")
     ### Derivative names of household members by class
@@ -70,9 +63,9 @@ hh_mc_seir_out <- function(parameters){
     names(v_HH0) <- v_names_hh
     v_HH0[1] <- 1 - n_hhsize*startingI
     v_HH0[m_possibilities[, "Ia"] == 1][1] <- n_hhsize*startingI
-    # v_HH0[3] <- n_hhsize*startingI
+    
     ### Full state vector
-    state0 <- c(S = (1-startingI)*n_pop_size,
+    state0 <- c(S = (1 - startingI)*n_pop_size,
                 rep(0, n_exp_states),
                 Ia = startingI*n_pop_size,
                 rep(0, (n_inf_states-1)),
@@ -84,8 +77,6 @@ hh_mc_seir_out <- function(parameters){
                 Infhh   = 0
     )
     names(state0) <- c(v_names_states_all, "Infcomm", "Infhh")
-    
-    # list2env(as.list(state0), envir = .GlobalEnv)
     
     ### Indexing vectors for household model
     ## Column index for susceptibles
@@ -174,8 +165,6 @@ hh_mc_seir_out <- function(parameters){
 #' @export
 hh_mc_seir_dx <- function(t, state, parameters) {
   with(as.list(c(state, parameters)),{
-    # state <- state0
-    # list2env(as.list(state), envir = .GlobalEnv)
     S     <- state[v_names_sus]
     v_E   <- state[v_names_exp]
     v_I   <- state[v_names_inf]
@@ -190,12 +179,7 @@ hh_mc_seir_dx <- function(t, state, parameters) {
     N = S + E + I + IDX + R + V
     
     ### vector with household members
-    # v_HH <- state[(n_states_tot+1):length(state)]
-    v_HH <- (state[(n_states_tot+1):(length(state)-2)]/N)*n_hhsize # The "-2" is because we added two compartments: incidence from community and household
-    
-    # n_err <- sum(v_HH[v_HH<0])
-    # v_HH[v_HH<0] = 0
-    # v_HH[length(v_HH)] <- -n_err
+    v_HH <- (state[(n_states_tot + 1):(length(state) - 2)]/N)*n_hhsize # The "-2" is because we added two compartments: incidence from community and household
     
     ### Proportion of infections that are DX
     p_dx <- IDX/(I + IDX)
@@ -217,7 +201,7 @@ hh_mc_seir_dx <- function(t, state, parameters) {
     m_hh_vax_rate_eff <- m_hh_vax * (r_vax * eff_vax)
     
     ### Household infection
-    household_infection_rate <- gen_household_transmission_mc_seir(r_tau = r_tau_avg, #r_tau, #
+    household_infection_rate <- gen_household_transmission_mc_seir(r_tau = r_tau_avg,
                                                                    n_hhsize = n_hhsize,
                                                                    n_contacts_hh = n_contacts_hh,
                                                                    v_HH = v_HH,
@@ -228,14 +212,14 @@ hh_mc_seir_dx <- function(t, state, parameters) {
                                                                    m_possibilities = m_possibilities)
     ## Force of infection from household to community
     n_household_infection_rate <- as.numeric(household_infection_rate)
-    # print(c(t, n_household_infection_rate))
     
     ### Force of infection
     n_lambda  <- r_beta_current*(I/N) + r_beta_current*p_alpha_dx*(IDX/N)
     
     ### Births
-    birth_int <- r_birth*N #+ r_gamma*n_inf_states*p_death_inf*(v_I[n_inf_states] + v_IDX[n_inf_states])
+    birth_int <- r_birth*N 
     
+    ### Community ODEs
     dS <- birth_int +                                       # Inflows (Births)
       r_omega*R +                                           # Inflows 
       r_vax_omega * V -                                     # Coming from V through vaccine waning immunity
@@ -256,8 +240,8 @@ hh_mc_seir_dx <- function(t, state, parameters) {
       c(0, (r_gamma*n_inf_states)*v_IDX[-n_inf_states]) - # Inflows
       (r_gamma*n_inf_states)*v_IDX -                      # Outflows
       r_death*v_IDX                                       # Outflows
-    dR <- (r_gamma*n_inf_states*(1-p_death_inf))*v_I[n_inf_states] + # Inflows
-      (r_gamma*n_inf_states*(1-p_death_inf))*v_IDX[n_inf_states] -    # Inflows
+    dR <- (r_gamma*n_inf_states*(1 - p_death_inf))*v_I[n_inf_states] + # Inflows
+      (r_gamma*n_inf_states*(1 - p_death_inf))*v_IDX[n_inf_states] -   # Inflows
       r_omega*R -                                     # Outflows
       r_death*R                                       # Outflows
     dV <- (r_vax*eff_vax) * S - # Incoming S to vaccination
@@ -280,25 +264,7 @@ hh_mc_seir_dx <- function(t, state, parameters) {
     v_tot_births     <- rep(0, length(v_HH))
     names(v_tot_births) <- v_names_hh
     
-    # ### I ADDED THIS 
-    # if(sum(v_HH[v_index_keep_sus]) == 0){
-    #   v_tot_births[v_names_hh[1]] <- r_birth_tot
-    # } else{
-    #   v_tot_births[v_index_keep_sus] <- (v_HH[v_index_keep_sus]/sum(v_HH[v_index_keep_sus]))*r_birth_tot
-    # }
-    # ### I ADDED THIS
     v_tot_births[v_index_keep_sus] <- v_HH[v_index_keep_sus]/sum(v_HH[v_index_keep_sus])*r_birth_tot
-    
-    # ### I ADDED THIS
-    # v_index_keep_alive  <- v_HH > 0 
-    # v_tot_deaths        <- rep(0, length(v_HH))
-    # names(v_tot_deaths) <- v_names_hh
-    # if(sum(v_HH[v_index_keep_alive]) == 0){
-    #   v_tot_deaths[v_names_hh[1]] <- r_death_tot
-    # } else{
-    #   v_tot_deaths[v_index_keep_alive] <- (v_HH[v_index_keep_alive]/sum(v_HH[v_index_keep_alive]))*r_death_tot
-    # }
-    # ### I ADDED THIS
     
     #### Rates of change in within household epidemics ####
     v_dHH  <- v_tot_births +
@@ -310,22 +276,8 @@ hh_mc_seir_dx <- function(t, state, parameters) {
       t(m_hh_vax_rate_eff)   %*% v_HH +
       t(m_hh_waning_vax) %*% v_HH +
       - r_death_tot       *  v_HH
-    # - v_tot_deaths ### I ADDED THIS
     
-    ### I ADDED THIS
     v_dHH <- v_dHH*N/n_hhsize
-    ### I ADDED THIS
-    
-    m_test <- cbind(v_tot_births,
-                    t(m_comm_trans_dx)   %*% v_HH,
-                    t(m_hh_trans_dx)     %*% v_HH,
-                    t(m_hh_prog)         %*% v_HH,
-                    t(m_hh_recov)        %*% v_HH,
-                    t(m_hh_waning)       %*% v_HH,
-                    t(m_hh_vax_rate_eff) %*% v_HH,
-                    t(m_hh_waning_vax)   %*% v_HH,
-                    - r_death_tot       *  v_HH)
-    sum(rowSums(m_test))
     
     # return the rate of change
     return(list(c(dS, 
@@ -354,21 +306,23 @@ hh_mc_seir_dx <- function(t, state, parameters) {
 gen_hh_n <- function(n_hhsize, v_names_states){
   n_states <- length(v_names_states)
   df_possibilities <- data.frame(id = 1, V1 = 0:n_hhsize)
-  for(i in 1:(n_states - 1)){ # i <- 2
-    df_possibilities <- left_join(df_possibilities, data.frame(id = 1, temp = 0:n_hhsize), by = "id")
-    colnames(df_possibilities)[i+2] <- paste0("V", i+1)
+  for (i in 1:(n_states - 1)) { # i <- 2
+    df_possibilities <- dplyr::left_join(df_possibilities, 
+                                         data.frame(id = 1, temp = 0:n_hhsize), 
+                                         by = "id")
+    colnames(df_possibilities)[i + 2] <- paste0("V", i + 1)
   }
   df_possibilities <-  df_possibilities %>%
-    select(-id)
+    dplyr::select(-id)
   v_names_cols <- colnames(df_possibilities)
   df_possibilities$new_hhsize <- rowSums(df_possibilities)
   df_possibilities <- df_possibilities %>% 
-    filter(new_hhsize == n_hhsize) %>%
-    select(-new_hhsize) %>% 
-    group_by_all() %>%
-    summarise_all(list(mean)) %>%
-    ungroup() %>%
-    arrange_all(desc)
+    dplyr::filter(new_hhsize == n_hhsize) %>%
+    dplyr::select(-new_hhsize) %>% 
+    dplyr::group_by_all() %>%
+    dplyr::summarise_all(list(mean)) %>%
+    dplyr::ungroup() %>%
+    dplyr::arrange_all(desc)
   colnames(df_possibilities) <- v_names_states
   return(df_possibilities)
 }
@@ -449,17 +403,16 @@ gen_household_matrices_mc_seir <- function(n_hhsize,
                                            v_index_hh_exp,
                                            v_index_hh_inf,
                                            v_index_hh_rec,
-                                           v_index_hh_vax, #
+                                           v_index_hh_vax,
                                            df_possibilities,
                                            r_sigma,
                                            r_gamma,
                                            r_omega,
-                                           r_vax_omega #
+                                           r_vax_omega
 ){
   m_possibilities <- as.matrix(df_possibilities)
   #### Naming vectors ####
-  v_hh_names <- as.matrix(unite(df_possibilities, col = "names", sep = ""))
-  # paste("HH",m_possibilities[, 1:n_states], m_possibilities[,2], sep = "")
+  v_hh_names <- as.matrix(tidyr::unite(df_possibilities, col = "names", sep = ""))
   ### Names of household members by class names
   v_names_hh  <- paste("HH", v_hh_names, sep = "")
   n_hh_mod    <- length(v_names_hh)
@@ -487,13 +440,15 @@ gen_household_matrices_mc_seir <- function(n_hhsize,
   ## Indices with active susceptibles
   v_index_keep_sus    <- (m_possibilities[, v_index_hh_sus] > 0)
   ## Indices with active exposed
-  v_index_keep_exp       <- rowSums((m_possibilities[, v_index_hh_exp, drop=FALSE] > 0)) > 0 
+  v_index_keep_exp       <- rowSums((m_possibilities[, v_index_hh_exp, 
+                                                     drop = FALSE] > 0)) > 0 
   v_index_keep_exp_first <- (m_possibilities[, v_index_hh_exp[1]] > 0)
   v_index_keep_exp_last  <- (m_possibilities[, v_index_hh_exp[n_exp_states]] > 0)
   m_index_keep_exp       <- as.matrix((m_possibilities[, v_index_hh_exp] > 0), 
                                       ncol = n_exp_states) # matrix of indices to keep exposed by class
   ## Indices with active infectious
-  v_index_keep_inf       <- rowSums((m_possibilities[, v_index_hh_inf, drop=FALSE] > 0)) > 0 
+  v_index_keep_inf       <- rowSums((m_possibilities[, v_index_hh_inf, 
+                                                     drop = FALSE] > 0)) > 0 
   v_index_keep_inf_first <- (m_possibilities[, v_index_hh_inf[1]] > 0)
   v_index_keep_inf_last  <- (m_possibilities[, v_index_hh_inf[n_inf_states]] > 0)
   m_index_keep_inf       <- as.matrix((m_possibilities[, v_index_hh_inf] > 0), 
@@ -504,17 +459,21 @@ gen_household_matrices_mc_seir <- function(n_hhsize,
   ## Indices with active infectious and recovered
   m_index_keep_inf_rec <- (m_possibilities[, v_index_inf_rec_hh] > 0) # matrix of indices to keep exposed by classv_index_inf_rec_hh
   ## Indices with active exposed for HH transmission
-  v_index_keep_exp_hh <- ((rowSums(m_possibilities[, v_index_hh_exp, drop=FALSE]) > 0) & 
-                            (rowSums(m_possibilities[, v_index_hh_inf, drop=FALSE]) > 0))
+  v_index_keep_exp_hh <- ((rowSums(m_possibilities[, v_index_hh_exp, 
+                                                   drop = FALSE]) > 0) & 
+                            (rowSums(m_possibilities[, v_index_hh_inf, 
+                                                     drop = FALSE]) > 0))
   v_index_keep_exp_hh_first <- ((m_possibilities[, v_index_hh_exp[1]] > 0) & 
-                                  (rowSums(m_possibilities[, v_index_hh_inf, drop=FALSE]) > 0))
+                                  (rowSums(m_possibilities[, v_index_hh_inf, 
+                                                           drop = FALSE]) > 0))
   ## Indices with active infectious for HH transmission
-  v_index_keep_inf_hh <- (m_possibilities[, v_index_hh_inf] > 1) #### NOT USED
+  v_index_keep_inf_hh <- (m_possibilities[, v_index_hh_inf] > 1) 
   ## Indices with active recovered
   v_index_keep_rec    <- (m_possibilities[, v_index_hh_rec] > 0)
   ## Indices with active susceptibles and infectious
   v_index_keep_tau <- ((m_possibilities[, v_index_hh_sus] > 0) & 
-                         (rowSums(m_possibilities[, v_index_hh_inf, drop=FALSE]) > 0))
+                         (rowSums(m_possibilities[, v_index_hh_inf, 
+                                                  drop = FALSE]) > 0))
   ## Indices with active vaccinated
   v_index_keep_vax    <- (m_possibilities[, v_index_hh_vax] > 0)
   
@@ -522,13 +481,13 @@ gen_household_matrices_mc_seir <- function(n_hhsize,
   m_comm_trans <- matrix(0, 
                          nrow = n_hh_mod, ncol = n_hh_mod, 
                          dimnames = list(v_names_hh, v_names_hh))
-  diag(m_comm_trans)[v_index_keep_sus] <- -1* # r_beta*
+  diag(m_comm_trans)[v_index_keep_sus] <- -1 *
     m_possibilities[v_index_keep_sus, v_index_hh_sus]
-  if(is.null(dim(m_comm_trans[v_index_keep_sus, v_index_keep_exp_first]))){ 
-    m_comm_trans[v_index_keep_sus, v_index_keep_exp_first] <- 1* #r_beta*
+  if (is.null(dim(m_comm_trans[v_index_keep_sus, v_index_keep_exp_first]))) { 
+    m_comm_trans[v_index_keep_sus, v_index_keep_exp_first] <- 1 *
       m_possibilities[v_index_keep_sus, v_index_hh_sus]  
   } else {
-    diag(m_comm_trans[v_index_keep_sus, v_index_keep_exp_first]) <- 1* #r_beta*
+    diag(m_comm_trans[v_index_keep_sus, v_index_keep_exp_first]) <- 1 *
       m_possibilities[v_index_keep_sus, v_index_hh_sus]  
   }
   
@@ -538,18 +497,18 @@ gen_household_matrices_mc_seir <- function(n_hhsize,
   m_hh_trans <- matrix(0, 
                        nrow = n_hh_mod, ncol = n_hh_mod, 
                        dimnames = list(v_names_hh, v_names_hh))
-  diag(m_hh_trans)[v_index_keep_tau] <- -1* # -r_tau_avg*
+  diag(m_hh_trans)[v_index_keep_tau] <- -1 *
     m_possibilities[v_index_keep_tau, v_index_hh_sus] * 
     rowSums(m_possibilities[v_index_keep_tau, v_index_hh_inf, drop = FALSE])
-  if(is.null(dim(m_hh_trans[v_index_keep_tau, v_index_keep_exp_hh_first]))){ 
+  if (is.null(dim(m_hh_trans[v_index_keep_tau, v_index_keep_exp_hh_first]))) { 
     # If resulting object is a scalar, don't use 'diag'
-    m_hh_trans[v_index_keep_tau, v_index_keep_exp_hh_first] <- 1* # r_tau_avg*
+    m_hh_trans[v_index_keep_tau, v_index_keep_exp_hh_first] <- 1 *
       m_possibilities[v_index_keep_tau, v_index_hh_sus] * 
       rowSums(m_possibilities[v_index_keep_tau, v_index_hh_inf, drop = FALSE])  
-  } else{ # If resulting object is a matrix, use 'diag'
-    diag(m_hh_trans[v_index_keep_tau, v_index_keep_exp_hh_first]) <- 1* # r_tau_avg*
+  } else { # If resulting object is a matrix, use 'diag'
+    diag(m_hh_trans[v_index_keep_tau, v_index_keep_exp_hh_first]) <- 1 *
       m_possibilities[v_index_keep_tau, v_index_hh_sus] * 
-      rowSums(m_possibilities[v_index_keep_tau, v_index_hh_inf, drop=FALSE])  
+      rowSums(m_possibilities[v_index_keep_tau, v_index_hh_inf, drop = FALSE])  
   }
   
   
@@ -560,7 +519,7 @@ gen_household_matrices_mc_seir <- function(n_hhsize,
   m_hh_prog_out_flat <- array(0, 
                               dim = c(n_hh_mod, n_hh_mod),
                               dimnames = list(v_names_hh, v_names_hh))
-  for(i in 1:n_exp_states){ # i <- 1
+  for (i in 1:n_exp_states) {
     diag(a_hh_prog_out[, , i])[m_index_keep_exp[, i]] <- diag(a_hh_prog_out[, , i])[m_index_keep_exp[, i]] - 
       (r_sigma*n_exp_states)*m_possibilities[m_index_keep_exp[, i], v_index_hh_exp[i]]
     m_hh_prog_out_flat <- m_hh_prog_out_flat + a_hh_prog_out[, , i]
@@ -573,7 +532,7 @@ gen_household_matrices_mc_seir <- function(n_hhsize,
                                        v_names_states  = v_names_states,
                                        v_names_source  = v_names_exp,
                                        v_names_destiny = v_names_inf,
-                                       v_names_source_destiny = v_names_exp_inf, # v_names_exp_inf[-length(v_names_exp_inf)], #### CHECK,
+                                       v_names_source_destiny = v_names_exp_inf,
                                        v_index_hh_source   = v_index_hh_exp,
                                        v_index_hh_destiny  = v_index_hh_inf,
                                        v_index_keep_source = v_index_keep_exp,
@@ -593,7 +552,7 @@ gen_household_matrices_mc_seir <- function(n_hhsize,
   m_hh_recov_out_flat <- array(0, 
                                dim = c(n_hh_mod, n_hh_mod),
                                dimnames = list(v_names_hh, v_names_hh))
-  for(i in 1:n_inf_states){ # i <- 1
+  for (i in 1:n_inf_states) { 
     diag(a_hh_recov_out[, , i])[m_index_keep_inf[, i]] <- diag(a_hh_recov_out[, , i])[m_index_keep_inf[, i]] - 
       (r_gamma*n_inf_states)*m_possibilities[m_index_keep_inf[, i], v_index_hh_inf[i]]
     
@@ -622,9 +581,9 @@ gen_household_matrices_mc_seir <- function(n_hhsize,
   m_hh_waning <- matrix(0, 
                         nrow = n_hh_mod, ncol = n_hh_mod, 
                         dimnames = list(v_names_hh, v_names_hh))
-  diag(m_hh_waning)[v_index_keep_rec] <- -r_omega*
+  diag(m_hh_waning)[v_index_keep_rec] <- -r_omega *
     m_possibilities[v_index_keep_rec, v_index_hh_rec]
-  if(is.null(dim(m_hh_waning[v_index_keep_rec, v_index_keep_sus]))){
+  if (is.null(dim(m_hh_waning[v_index_keep_rec, v_index_keep_sus]))) {
     # If resulting object is a scalar, don't use 'diag'
     m_hh_waning[v_index_keep_rec, v_index_keep_sus] <- r_omega *
       m_possibilities[v_index_keep_rec, v_index_hh_rec]
@@ -638,15 +597,15 @@ gen_household_matrices_mc_seir <- function(n_hhsize,
   m_hh_waning_vax <- matrix(0, 
                             nrow = n_hh_mod, ncol = n_hh_mod, 
                             dimnames = list(v_names_hh, v_names_hh))
-  diag(m_hh_waning_vax)[v_index_keep_vax] <- -r_vax_omega*
+  diag(m_hh_waning_vax)[v_index_keep_vax] <- -r_vax_omega *
     m_possibilities[v_index_keep_vax, v_index_hh_vax]
-  if(is.null(dim(m_hh_waning_vax[v_index_keep_vax, v_index_keep_sus]))){
+  if (is.null(dim(m_hh_waning_vax[v_index_keep_vax, v_index_keep_sus]))) {
     # If resulting object is a scalar, don't use 'diag'
-    m_hh_waning_vax[v_index_keep_vax, v_index_keep_sus] <- r_vax_omega*
+    m_hh_waning_vax[v_index_keep_vax, v_index_keep_sus] <- r_vax_omega *
       m_possibilities[v_index_keep_vax, v_index_hh_vax]
   } else {
     # If resulting object is a matrix, use 'diag'
-    diag(m_hh_waning_vax[v_index_keep_vax, v_index_keep_sus]) <- r_vax_omega*
+    diag(m_hh_waning_vax[v_index_keep_vax, v_index_keep_sus]) <- r_vax_omega *
       m_possibilities[v_index_keep_vax, v_index_hh_vax]
   }
   
@@ -654,25 +613,17 @@ gen_household_matrices_mc_seir <- function(n_hhsize,
   m_hh_vax <- matrix(0, 
                      nrow = n_hh_mod, ncol = n_hh_mod, 
                      dimnames = list(v_names_hh, v_names_hh))
-  diag(m_hh_vax)[v_index_keep_sus] <- -1* # r_vax*r_vax_eff*
+  diag(m_hh_vax)[v_index_keep_sus] <- -1 *
     m_possibilities[v_index_keep_sus, v_index_hh_sus]
-  if(is.null(dim(m_hh_vax[v_index_keep_sus, v_index_keep_vax]))){ 
+  if (is.null(dim(m_hh_vax[v_index_keep_sus, v_index_keep_vax]))) { 
     # If resulting object is a scalar, don't use 'diag'
-    m_hh_vax[v_index_keep_sus, v_index_keep_vax] <- 1* # r_vax*r_vax_eff*
+    m_hh_vax[v_index_keep_sus, v_index_keep_vax] <- 1 *
       m_possibilities[v_index_keep_sus, v_index_hh_sus]
   } else {
     # If resulting object is a matrix, use 'diag'
-    diag(m_hh_vax[v_index_keep_sus, v_index_keep_vax]) <- 1* # r_vax*r_vax_eff*
+    diag(m_hh_vax[v_index_keep_sus, v_index_keep_vax]) <- 1 *
       m_possibilities[v_index_keep_sus, v_index_hh_sus]
   }
-  
-  # rowSums(m_comm_trans)
-  # rowSums(m_hh_trans)
-  # rowSums(m_hh_prog)
-  # rowSums(m_hh_recov)
-  # rowSums(m_hh_waning)
-  # rowSums(m_hh_waning_vax)
-  # rowSums(m_hh_vax)
   
   return(list(m_comm_trans    = m_comm_trans,
               m_hh_trans      = m_hh_trans,
@@ -723,18 +674,18 @@ compute_inflows <- function(n_hhsize,
                     dim = c(n_hh_mod, n_hh_mod),
                     dimnames = list(v_names_hh, v_names_hh))
   
-  v_index_keep_source_hh_destiny_first_or <- (rowSums(m_possibilities[, v_index_hh_source[-1], drop=FALSE] > 0) | 
-                                                (rowSums(m_possibilities[, v_index_hh_destiny[1], drop=FALSE]) > 0))
+  v_index_keep_source_hh_destiny_first_or <- (rowSums(m_possibilities[, v_index_hh_source[-1], drop = FALSE] > 0) | 
+                                                (rowSums(m_possibilities[, v_index_hh_destiny[1], drop = FALSE]) > 0))
   
   v_index_hh_signature <- which(!(v_names_states %in% v_names_source_destiny))
   
   rownames(m_possibilities) <- v_names_hh
   df_possibilities <- as.data.frame(m_possibilities)
   
-  m_flow_source  <- m_possibilities[v_index_keep_source, , drop = FALSE] # ADDED
-  m_flow_destiny <- m_possibilities[v_index_keep_source_hh_destiny_first_or, , drop = FALSE] # ADDED
+  m_flow_source  <- m_possibilities[v_index_keep_source, , drop = FALSE]
+  m_flow_destiny <- m_possibilities[v_index_keep_source_hh_destiny_first_or, , drop = FALSE]
   m_flow_destiny <- rbind(m_flow_destiny, 
-                          m_flow_source[rownames(m_flow_source)[(!rownames(m_flow_source) %in% rownames(m_flow_destiny))], ]) # these rows represent the states where theres is no progression. It could have been progression but there wasn't for this particular case. i.e., the fraction of people that doesn't move
+                          m_flow_source[rownames(m_flow_source)[(!rownames(m_flow_source) %in% rownames(m_flow_destiny))], ]) # these rows represent the states where there is no progression. It could have been progression but there wasn't for this particular case. i.e., the fraction of people that doesn't move
   
   v_names_HH_flow_source <-  paste("HH", 
                                    as.matrix(tidyr::unite(df_possibilities[v_index_keep_source, ], 
@@ -752,12 +703,10 @@ compute_inflows <- function(n_hhsize,
                      ncol = length(v_names_HH_flow_destiny), 
                      dimnames = list(v_names_HH_flow_source, 
                                      v_names_HH_flow_destiny))
-  # View(m_p_flow)
   
-  p_flow <- 1-exp(-r_flow*n_source_states*1)
+  p_flow <- 1 - exp(-r_flow*n_source_states * 1)
   
-  for(i in 1:nrow(m_flow_source)){ # i = 41
-    # print(rownames(m_flow_source)[i])
+  for (i in 1:nrow(m_flow_source)) {
     # We want to determine whether the row is binomial or a convolution of binomials
     # and how many columns we are going to need and which columns we need.
     curr_row      <- m_flow_source[i, ]
@@ -766,35 +715,32 @@ compute_inflows <- function(n_hhsize,
     # first element in the destiny, we want to fix their values and total them 
     # up. The household size minus that total is the number of people that can 
     # move.
-    signature <- curr_row[v_index_hh_signature] # c(1, (v_index_hh_destiny[1]+1))
+    signature <- curr_row[v_index_hh_signature]
     n_movers  <- n_hhsize - sum(signature)
     
-    # We want to scan across all elements of the source if ony one of those 
+    # We want to scan across all elements of the source if any one of those 
     # numbers is greater than 0, then we are binomial; otherwise, we are 
     # convolution.
     binomial_flag <- FALSE
-    if(n_movers == 1){
+    if (n_movers == 1) {
       binomial_flag <- TRUE
-    } else{
+    } else {
       binomial_flag <- sum(curr_row[v_names_source] == n_movers) == 1
     }
     
     # If we are binomial, then the number of states that we need to find is 
     # number of elements in source + 1, which is the diagonal state. 
-    if(binomial_flag){
-      index_source  <- which(names(curr_row) == names(which(curr_row[v_names_source]>0)))
+    if (binomial_flag) {
+      index_source  <- which(names(curr_row) == names(which(curr_row[v_names_source] > 0)))
       index_destiny <- index_source + 1
-      # v_index_not_movers <- names(curr_row)[!(names(curr_row) %in% c(names(signature), 
-      #                                                                names(curr_row[index_source]), 
-      #                                                                names(curr_row[index_destiny])))]
       m_destination_cols <- matrix(0, 
                                    nrow = n_movers + 1,
                                    ncol = length(curr_row), 
-                                   dimnames = list(1:(n_movers+1), names(curr_row)))
+                                   dimnames = list(1:(n_movers + 1), names(curr_row)))
       t_temp <- t(m_destination_cols)
       t_temp[names(signature), ] <- signature
       m_destination_cols         <- t(t_temp)
-      for(mover in 0:n_movers){
+      for (mover in 0:n_movers) {
         m_destination_cols[mover + 1, index_source]  <- n_movers - mover
         m_destination_cols[mover + 1, index_destiny] <- mover
       }
@@ -806,7 +752,7 @@ compute_inflows <- function(n_hhsize,
       m_p_flow[name_curr_row, v_names_hh_destiny] <- dbinom(0:n_movers, 
                                                             n_movers, 
                                                             prob = p_flow)
-    } else{
+    } else {
       # Loop over `m_flow_destiny` columns, gather a list of them that we have to
       # test using the backwards algorithm.
       # Rules:
@@ -815,62 +761,57 @@ compute_inflows <- function(n_hhsize,
       #     b. destiny signature columns are not equal. to source signature columns
       # For the shorter list, we will use the backwards algorithm
       m_keep_destiny <- cbind(m_flow_destiny, Keep = 0)
-      for(j in 1:nrow(m_keep_destiny)){ # j <- 7
+      for (j in 1:nrow(m_keep_destiny)) {
         curr_row_destiny <- m_keep_destiny[j, ]
         flag1 <- curr_row_destiny[v_names_source[1]] <= curr_row[v_names_source[1]] 
         flag2 <- sum(curr_row_destiny[names(signature)] == curr_row[names(signature)]) == length(names(signature))
         m_keep_destiny[j, "Keep"] <- flag1 & flag2
       }
-      m_keep_destiny_limited <- m_keep_destiny[m_keep_destiny[, "Keep"]==1, ]
-      v_names_source_destiny <- c(v_names_source, v_names_destiny[1])       # Documented in SC-COSMO
-      for(j in 1:nrow(m_keep_destiny_limited)){ # j <- 2
-        v_curr_delta <- vector(mode = "numeric", length = (length(v_names_source_destiny)-1))
+      m_keep_destiny_limited <- m_keep_destiny[m_keep_destiny[, "Keep"] == 1, ]
+      v_names_source_destiny <- c(v_names_source, v_names_destiny[1])
+      for (j in 1:nrow(m_keep_destiny_limited)) {
+        v_curr_delta <- vector(mode = "numeric", length = (length(v_names_source_destiny) - 1))
         curr_delta <- 0
-        for(k in n_source_states:1){# k = 3
-          curr_col_source  <- curr_row[v_names_source_destiny[k+1]]
-          curr_col_destiny <- m_keep_destiny_limited[j, v_names_source_destiny[k+1]] 
+        for (k in n_source_states:1) {
+          curr_col_source  <- curr_row[v_names_source_destiny[k + 1]]
+          curr_col_destiny <- m_keep_destiny_limited[j, v_names_source_destiny[k + 1]] 
           curr_delta <- curr_col_destiny + curr_delta - curr_col_source
           v_curr_delta[k] <- curr_delta
-          if(curr_delta < 0){
+          if (curr_delta < 0) {
             m_keep_destiny_limited[j, "Keep"] <- FALSE
             break
           }
-          if(curr_delta > curr_row[v_names_source_destiny[k]]){
+          if (curr_delta > curr_row[v_names_source_destiny[k]]) {
             m_keep_destiny_limited[j, "Keep"] <- FALSE
             break
           }
         }
         
-        if(m_keep_destiny_limited[j, "Keep"]==TRUE){
+        if (m_keep_destiny_limited[j, "Keep"] == TRUE) {
           binom_conv <- 1
-          for(k in 1:n_source_states){ # k = 2
-            # print(curr_row[k])
-            # print(v_curr_delta[k])
+          for (k in 1:n_source_states) {
             binom_conv <- binom_conv*dbinom(x = v_curr_delta[k], 
                                             size = curr_row[v_names_source[k]], 
                                             prob = p_flow)
-            # print(binom_conv)
           }
           m_p_flow[name_curr_row, rownames(m_keep_destiny_limited)[j]] <- binom_conv
         }
       }
-      
     }
-    # t(t(m_keep_destiny[m_keep_destiny[, "Keep"]==1, ]) - c(curr_row, 0))
   }
   
-  m_r_flow <- -log(1-m_p_flow)
-  if(length(v_names_HH_flow_source)==1){
+  m_r_flow <- -log(1 - m_p_flow)
+  if (length(v_names_HH_flow_source) == 1) {
     m_r_flow[v_names_HH_flow_source, v_names_HH_flow_source] <- 0
-  } else{
+  } else {
     diag(m_r_flow[v_names_HH_flow_source, v_names_HH_flow_source]) <- 0
   } 
   
   m_r_prop_flow <- m_r_flow/rowSums(m_r_flow)
   
-  if(length(v_names_HH_flow_source)==1){
+  if (length(v_names_HH_flow_source) == 1) {
     m_hh_in[v_names_HH_flow_source, v_names_HH_flow_destiny] <- -1*(m_hh_out[v_names_HH_flow_source, v_names_HH_flow_source] * m_r_prop_flow)  
-  } else{
+  } else {
     m_hh_in[v_names_HH_flow_source, v_names_HH_flow_destiny] <- -1*(diag(m_hh_out[v_names_HH_flow_source, v_names_HH_flow_source]) * m_r_prop_flow)  
   }
   
@@ -917,8 +858,8 @@ get_vax <- function(n_time, parameters){
 #' @export
 update_param_list <- function(l_params_all, params_updated){
   
-  if (typeof(params_updated)!="list"){
-    params_updated <- split(unname(params_updated),names(params_updated)) #converte the named vector to a list
+  if (typeof(params_updated) != "list") {
+    params_updated <- split(unname(params_updated),names(params_updated)) #convert the named vector to a list
   }
   l_params_all <- modifyList(l_params_all, params_updated) #update the values
   return(l_params_all)
@@ -937,7 +878,7 @@ calc_inf_nodx <- function(l_out){
   l_params_all <- l_out$l_params_all
   df_InfNoDx <- data.frame(time = df_out$time,
                            InfNoDX = rowSums(df_out[, l_params_all$v_names_inf,
-                                                    drop=FALSE]),
+                                                    drop = FALSE]),
                            check.names = FALSE)
   return(df_InfNoDx)
 }
@@ -955,7 +896,7 @@ calc_inf_totals <- function(l_out){
   df_Inftot <- data.frame(time = df_out$time,
                           Inftot = rowSums(df_out[, c(l_params_all$v_names_inf,
                                                       l_params_all$v_names_inf_dx),
-                                                  drop=FALSE]),
+                                                  drop = FALSE]),
                           check.names = FALSE)
   return(df_Inftot)
 }
@@ -974,7 +915,7 @@ calc_exp_totals <- function(l_out){
   
   df_Exptot <- data.frame(time = df_out$time, 
                           Exptot = rowSums(df_out[, l_params_all$v_names_exp,
-                                                  drop=FALSE]), 
+                                                  drop = FALSE]), 
                           check.names = FALSE)
   return(df_Exptot)
 }
@@ -999,20 +940,11 @@ show_MC_SEIRV_model_results <- function(l_out) {
   
   dfmc <- data.frame(dfmc)
   ggplot() + 
-    # geom_line(data = dfmc, aes(x = time, y = S), color = "blue"  ) +
-    # geom_line(data = dfmc, aes(x = time, y = E), color = "purple") +
-    # geom_line(data = dfmc, aes(x = time, y = I), color = "red"   ) +
-    # geom_line(data = dfmc, aes(x = time, y = R), color = "green" ) +
-    
-    # geom_line(data = dfmc, aes(x = time, y = S, color = "S")) +
     geom_line(data = dfmc, aes(x = time, y = E, color = "E")) +
     geom_line(data = dfmc, aes(x = time, y = I, color = "I")) +
     geom_line(data = dfmc, aes(x = time, y = IDX, color = "IDX")) +
     geom_line(data = dfmc, aes(x = time, y = R, color = "R")) +
     geom_line(data = dfmc, aes(x = time, y = V, color = "V")) +
-    # scale_color_manual("Compartment",
-    #                    values = c("blue", "purple", "red", "green"),
-    #                    labels = c("S", "E", "I", "R")) +
     xlab('Time') +
     ylab('Count') +
     theme(legend.position = "bottom")
@@ -1031,17 +963,10 @@ show_MC_SEIR_model_results <- function(l_out) {
   dfmc$R <- df1$R
   dfmc <- data.frame(dfmc)
   ggplot() + 
-    # geom_line(data = dfmc, aes(x = time, y = S), color = "blue"  ) +
-    # geom_line(data = dfmc, aes(x = time, y = E), color = "purple") +
-    # geom_line(data = dfmc, aes(x = time, y = I), color = "red"   ) +
-    # geom_line(data = dfmc, aes(x = time, y = R), color = "green" ) +
     geom_line(data = dfmc, aes(x = time, y = S, color = "S")) +
     geom_line(data = dfmc, aes(x = time, y = E, color = "E")) +
     geom_line(data = dfmc, aes(x = time, y = I, color = "I")) +
     geom_line(data = dfmc, aes(x = time, y = R, color = "R")) +
-    # scale_color_manual("Compartment",
-    #                    values = c("blue", "purple", "red", "green"),
-    #                    labels = c("S", "E", "I", "R")) +
     xlab('Time') +
     ylab('Count') +
     theme(legend.position = "bottom")
@@ -1060,15 +985,9 @@ show_MC_EI_model_results <- function(l_out) {
   dfmc$R <- df1$R
   dfmc <- data.frame(dfmc)
   ggplot() + 
-    # # geom_line(data = dfmc, aes(x = time, y = S), color = "blue") +
-    # geom_line(data = dfmc, aes(x = time, y = E), color = "purple") +
-    # geom_line(data = dfmc, aes(x = time, y = I), color = "red") +
-    # # geom_line(data = dfmc, aes(x = time, y = R), color = "green") +
-    # geom_line(data = dfmc, aes(x = time, y = S, color = "S")) +
     geom_line(data = dfmc, aes(x = time, y = E, color = "E")) +
     geom_line(data = dfmc, aes(x = time, y = I, color = "I")) +
     geom_line(data = dfmc, aes(x = time, y = IDX, color = "IDX")) +
-    # geom_line(data = dfmc, aes(x = time, y = R, color = "R")) +
     scale_color_manual("Compartment",
                        values = c("purple", "red", "gray"),
                        labels = c("E", "I", "IDX")) +
@@ -1079,8 +998,6 @@ show_MC_EI_model_results <- function(l_out) {
 }
 
 show_MC_EI_model_results_old <- function(output) {
-  # output <- l_out$df_out_hh_mc_seir
-  # l_params_all <- l_out$l_params_all
   df1 <- data.frame(output)
   dfmc <- c()
   dfmc$time <- df1$time
@@ -1090,14 +1007,8 @@ show_MC_EI_model_results_old <- function(output) {
   dfmc$R <- df1$R
   dfmc <- data.frame(dfmc)
   ggplot() + 
-    # # geom_line(data = dfmc, aes(x = time, y = S), color = "blue") +
-    # geom_line(data = dfmc, aes(x = time, y = E), color = "purple") +
-    # geom_line(data = dfmc, aes(x = time, y = I), color = "red") +
-    # # geom_line(data = dfmc, aes(x = time, y = R), color = "green") +
-    # geom_line(data = dfmc, aes(x = time, y = S, color = "S")) +
     geom_line(data = dfmc, aes(x = time, y = E, color = "E")) +
     geom_line(data = dfmc, aes(x = time, y = I, color = "I")) +
-    # geom_line(data = dfmc, aes(x = time, y = R, color = "R")) +
     scale_color_manual("Compartment",
                        values = c("purple", "red"),
                        labels = c("E", "I")) +
@@ -1117,8 +1028,29 @@ show_MC_EI_model_results_old <- function(output) {
 #' A daily rate
 #' @export
 daily_rate <- function(cum_prop, duration){
-  if((cum_prop >= 1) | (cum_prop < 0)){
+  if ((cum_prop >= 1) | (cum_prop < 0)) {
     stop("cum_prop should be [0,1)")
   }
   return(-log(1 - cum_prop)/duration)
+}
+
+#' Number of household ordinary differential equations (ODEs)
+#'
+#' \code{number_of_odes} generates the daily rate to achieve a cumulative proportion 
+#' over a given duration.
+#'
+#' @param n_states Number of health states
+#' @param n_hhsize Household size
+#' @return 
+#' The number of household ordinary differential equations (ODEs) for a given 
+#' household size and number of health states
+#' @export
+number_of_hh_odes <- function(n_states, n_hhsize){
+  n_hh_odes <- 0
+  for (i in 1:min(n_states, n_hhsize)) {
+    n_hh_odes <- n_hh_odes + (choose((n_hhsize - 1), (i - 1)) * choose(n_states,  i))
+  }
+  # Alternative code: 
+  # n_hh_odes <- factorial(n_hhsize + (n_states - 1))/(factorial(n_hhsize)*factorial(n_states - 1)) 
+  return(n_hh_odes)
 }
