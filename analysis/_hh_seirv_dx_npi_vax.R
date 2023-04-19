@@ -38,7 +38,7 @@ max_time <- 200
 times <- seq(0, max_time, by = 1)
 
 ### NPIs
-v_npi_times  <- c(0, 15, 16, 70, max_time+1)
+v_npi_times  <- c(0, 15, 16, 70, max_time + 1)
 # v_npi_levels <- c(1, 1, 0.2, 0.2, 0.2)
 v_npi_levels <- c(1, 1, 0.01, 0.01, 0.01)
 # v_npi_levels <- c(1, 1, 0.6, 0.6, 0.6)
@@ -48,7 +48,7 @@ fun_npi <- approxfun(x = v_npi_times, y = v_npi_levels, method = "linear")
 
 ### Vax rates
 ### vaccination strategies
-v_time_stop_vax <- c(0, 40, 41, max_time+1)
+v_time_stop_vax <- c(0, 40, 41, max_time + 1)
 v_duration  <- diff(c(0, v_time_stop_vax))
 # v_cum_prop_time <- c(0, 0.80, 0, 0)
 v_cum_prop_time <- c(0, 0, 0, 0)
@@ -110,7 +110,6 @@ v_r_omega <- c(0, 1/100, 1/50)
 v_level_npi <- c(1, 0.8, 0.4)
 v_vax_eff   <- c(1, 0.9, 0.5)
 v_vax_prop  <- c(0, 0.3, 0.6, 0.9)
-# n_hh_mod <- factorial(n_hhsize + (n_states-1))/(factorial(n_hhsize)*factorial(n_states-1)) #l_params_all
 
 df_doe_mc_seirv <- expand.grid(n_hhsize = v_hhsize,
                                n_exp_states = v_num_exp,
