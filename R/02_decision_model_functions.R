@@ -40,7 +40,7 @@ hh_mc_seir_out <- function(parameters){
     n_states     <- length(v_names_states) # Not including the number of IDX
     n_states_tot <- length(v_names_states_tot) # Including the number of IDX
     
-    n_hh_mod <- factorial(n_hhsize + (n_states-1))/(factorial(n_hhsize)*factorial(n_states-1)) #l_params_all
+    n_hh_mod <- factorial(n_hhsize + (n_states - 1))/(factorial(n_hhsize)*factorial(n_states - 1)) #l_params_all
     
     ### Matrix with possible combinations of household members
     df_possibilities <- gen_hh_n(n_hhsize = n_hhsize, 
@@ -68,7 +68,7 @@ hh_mc_seir_out <- function(parameters){
     state0 <- c(S = (1 - startingI)*n_pop_size,
                 rep(0, n_exp_states),
                 Ia = startingI*n_pop_size,
-                rep(0, (n_inf_states-1)),
+                rep(0, (n_inf_states - 1)),
                 rep(0, n_inf_states),
                 R = 0,
                 V = 0,
@@ -213,7 +213,7 @@ hh_mc_seir_dx <- function(t, state, parameters) {
     ## Force of infection from household to community
     n_household_infection_rate <- as.numeric(household_infection_rate)
     
-    ### Force of infection
+    ### Community force of infection
     n_lambda  <- r_beta_current*(I/N) + r_beta_current*p_alpha_dx*(IDX/N)
     
     ### Births
@@ -224,10 +224,10 @@ hh_mc_seir_dx <- function(t, state, parameters) {
       r_omega*R +                                           # Inflows 
       r_vax_omega * V -                                     # Coming from V through vaccine waning immunity
       n_lambda*S -                                          # Outflows
-      n_household_infection_rate*S -                        # Outflows # previously multiplied by N!!!
+      n_household_infection_rate*S -                        # Outflows 
       (r_vax*eff_vax) * S -                                 # Outflows
       r_death*S                                             # Outflows
-    v_d_E <- c(n_lambda*S + n_household_infection_rate*S,     # Inflows # previously multiplied by N!!!
+    v_d_E <- c(n_lambda*S + n_household_infection_rate*S,   # Inflows 
                (r_sigma*n_exp_states)*v_E[-n_exp_states]) - # Inflows
       (r_sigma*n_exp_states)*v_E -                          # Outflows
       r_death*v_E                                           # Outflows
@@ -332,6 +332,10 @@ gen_hh_n <- function(n_hhsize, v_names_states){
 #' \code{gen_household_transmission} generates household transmission (i.e., 
 #' force of infection).
 #' 
+#' @param r_tau Household transmission rate
+#' @param n_hhsize Household size
+#' @param n_contacts_hh number of within-household contacts between susceptible 
+#' and infectious members
 #' @param v_HH State vector of within household epidemics
 #' @param v_index_hh_sus Indexing column vector of susceptibles
 #' @param v_index_hh_inf Indexing column vector of infectious
@@ -339,7 +343,7 @@ gen_hh_n <- function(n_hhsize, v_names_states){
 #' @param m_possibilities Matrix with possible combinations of household 
 #' members within each epidemic compartment
 #' @return 
-#' A scalar with the force of infection
+#' A scalar with the household force of infection
 gen_household_transmission_mc_seir <- function(r_tau,
                                                n_hhsize,
                                                n_contacts_hh,
