@@ -4,8 +4,8 @@ devtools::load_all()
 
 library(tidyverse)
 library(deSolve)
-library(dplyr)
-library(foreach)
+# library(dplyr)
+# library(foreach)
 
 n_hhsize <- 3 # 2 # 1
 n_pop_size <- 1000000
@@ -46,13 +46,13 @@ v_npi_levels <- c(1, 1, 0.01, 0.01, 0.01)
 
 fun_npi <- approxfun(x = v_npi_times, y = v_npi_levels, method = "linear")
 
-### Vax rates
-### vaccination strategies
+# Vaccination policies ----
 v_time_stop_vax <- c(0, 40, 41, max_time + 1)
 v_duration  <- diff(c(0, v_time_stop_vax))
-# v_cum_prop_time <- c(0, 0.80, 0, 0)
+# v_cum_prop_time <- c(0, 0.80, 0, 0) # Uncomment to try a vaccination strategy
 v_cum_prop_time <- c(0, 0, 0, 0)
 
+## Change of vaccination policies over time ---
 v_vax_rates <- cbind(daily_rate(cum_prop = v_cum_prop_time[2], # We need constant rate to get up to cumulative coverage
                                 duration = v_duration[2]),       # We need constant rate to get up to cumulative coverage
                      daily_rate(cum_prop = v_cum_prop_time[2],
@@ -64,6 +64,7 @@ v_vax_rates <- cbind(daily_rate(cum_prop = v_cum_prop_time[2], # We need constan
 fun_vax <- approxfun(x = v_time_stop_vax, y = v_vax_rates, method = "linear")
 fun_vax(0:100)
 
+# Create list of parameters ----
 l_parameters <- list(n_pop_size = n_pop_size,
                      n_inf   = n_inf, 
                      r_beta  = r_beta,
@@ -87,66 +88,17 @@ l_parameters <- list(n_pop_size = n_pop_size,
                      fun_npi = fun_npi,
                      fun_vax = fun_vax
 )
-# list2env(l_parameters, envir = .GlobalEnv)
 
+## Verify NPI is working for a specific time ----
 get_npi(n_time = 70, parameters = l_parameters)
 
-## Test run
+# Run the model ----
 sim_time <- system.time(
   l_out <- hh_mc_seir_out(parameters = l_parameters)
 )
 sim_time
-l_out$l_params_all$sim_time <- sim_time[3]
 
-# show_MC_EI_model_results(l_out)
+# Plot epidemic outputs ----
+show_MC_EI_model_results(l_out)
 show_MC_SEIRV_model_results(l_out)
-
-v_hhsize  <- seq(1, 6)
-v_num_exp <- seq(1, 3)
-v_num_inf <- seq(1, 3)
-v_r_beta  <- c(0.20, 0.30, 0.40)
-v_r_tau   <- c(0.40, 0.45, 0.50)
-v_r_omega <- c(0, 1/100, 1/50)
-v_level_npi <- c(1, 0.8, 0.4)
-v_vax_eff   <- c(1, 0.9, 0.5)
-v_vax_prop  <- c(0, 0.3, 0.6, 0.9)
-
-df_doe_mc_seirv <- expand.grid(n_hhsize = v_hhsize,
-                               n_exp_states = v_num_exp,
-                               n_inf_states = v_num_inf,
-                               r_beta = v_r_beta,
-                               r_tau = v_r_tau,
-                               r_omega = v_r_omega,
-                               level_npi = v_level_npi,
-                               eff_vax = v_vax_eff,
-                               vax_prop = v_vax_prop) %>%
-  arrange(n_hhsize, n_exp_states, n_inf_states) %>%
-  mutate(pid = row_number())
-save(df_doe_mc_seirv, file = "data/df_doe_mc_seirv.RData")
-saveRDS(df_doe_mc_seirv, file = "data/df_doe_mc_seirv.RDS")
-
-#### Natural history DoE
-df_doe_mc_seirv_nathist <- df_doe_mc_seirv %>% 
-  filter(level_npi == 1,
-         eff_vax   == 1,
-         vax_prop  == 0)
-save(df_doe_mc_seirv_nathist, file = "data/df_doe_mc_seirv_nathist.RData")
-saveRDS(df_doe_mc_seirv_nathist, file = "data/df_doe_mc_seirv_nathist.RDS")
-
-df_doe_mc_seirv_nathist_hhsize <- df_doe_mc_seirv_nathist %>% 
-  filter(r_beta  == 0.20, 
-         r_tau   == 0.40, 
-         r_omega == 0)
-save(df_doe_mc_seirv_nathist_hhsize, file = "data/df_doe_mc_seirv_nathist_hhsize.RData")
-saveRDS(df_doe_mc_seirv_nathist_hhsize, file = "data/df_doe_mc_seirv_nathist_hhsize.RDS")
-
-#### Control measures DoE
-df_doe_mc_seirv_control <- df_doe_mc_seirv %>% 
-  filter(n_hhsize %in% c(1, 2, 3, 4, 5) & 
-         # n_exp_states == 3, n_inf_states == 2,
-         r_omega %in% c(0, 1/100, 1/50) &
-         r_tau %in% c(0.40, 0.45, 0.50) &
-         r_beta %in% c(0.20, 0.30, 0.40))
-save(df_doe_mc_seirv_control, file = "data/df_doe_mc_seirv_control.RData")
-saveRDS(df_doe_mc_seirv_control, file = "data/df_doe_mc_seirv_control.RDS")
 
