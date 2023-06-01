@@ -6,8 +6,13 @@ Authors@R:
     c(person(given = "Fernando",
              family = "Alarid-Escudero",
              role = c("aut", "cre"),
-             email = "fernando.alarid@cide.edu",
+             email = "falarid@stanford.edu",
              comment = c(ORCID = "0000-0001-5076-1172")),
+      person(given = "Jason",
+             family = "Andrews",
+             role = c("aut"),
+             email = "jandr@stanford.edu",
+             comment = c(ORCID = "0000-0002-5967-251X")),       
       person(given = "Jeremy D.",
              family = "Goldhaber-Fiebert",
              role = "aut",
@@ -16,32 +21,19 @@ Authors@R:
       person(given = "SC-COSMO consortium", 
              email = "info@sc-cosmo.org",
              role = "cph"))
-Maintainer: Fernando Alarid-Escudero <fernando.alarid@cide.edu>
-Description: A package with that implements Household multi-compartment (MC) 
+Maintainer: Fernando Alarid-Escudero <falarid@stanford.edu>
+Description: A package that implements a household multi-compartment (MC) 
   susceptible-exposed-infectious-recovered-vaccinated (SEIRV) model.
 License: file LICENSE
 Depends:
     R (>= 3.5.0)
 Imports:
     dplyr,
-    lhs,
-    plyr,
     reshape2,
-    truncnorm,
     utils,
-    plotrix,
     rlang
 Suggests: 
-    knitr,
-    rmarkdown,
-    dampack,
     ggplot2, 
-    testthat,
-    pkgdown,
-    survival,
-    BiocManager,
-    kableExtra,
-    png,
     scales
 VignetteBuilder: 
     knitr

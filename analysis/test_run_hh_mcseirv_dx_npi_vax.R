@@ -1,72 +1,59 @@
+# Clean workspace ----
 rm(list = ls())
 
+# Load functions  ----
 devtools::load_all()
+# source("R/model_functions.R") # Alternatively run this to load functions if not downloaded as an RStudio project
 
-# install.packages("diffeqr")
-# library(diffeqr)
+# Load packages ----
 library(tidyverse)
 library(deSolve)
-library(dplyr)
-library(foreach)
 
-# Read the location as an argument
-args <- commandArgs(trailingOnly = TRUE)
-n_pid <- ifelse(!is.na(args[1]), args[1], "1") 
-n_pid <- as.numeric(n_pid)
-print(n_pid)
-
-df_doe_mc_seirv <- readRDS("data/df_doe_mc_seirv.RDS")
-
-df_params <- df_doe_mc_seirv %>%
-  filter(pid == n_pid)
-
-
+# Define parameters ----
+n_hhsize <- 3 # 2 # 1
 n_pop_size <- 1000000
 n_inf   <- 1
+r_beta  <- 0.25 
 n_contacts_comm <- 10 
-n_contacts_hh <- 4
-r_vax_omega <- 0 
 r_sigma <- 0.35
 r_gamma <- 0.2
-r_dx          <- 0.1  # detection rate
-p_alpha_dx    <- 0.20  # decrease in infectiousness
-r_death       <- 0 #0.001 
+n_contacts_hh <- 4
+r_tau   <- 0.35
+r_omega <- 0 #1/100
+r_vax_omega <- 0 #1/100
+redux_vax <- 0.1
+eff_vax <- (1.0 - redux_vax)
+
+n_exp_states <- 3
+n_inf_states <- 2
+
+r_dx          <- 0.10 # detection rate
+p_alpha_dx    <- 0.20 # decrease in infectiousness
+r_death       <- 0.00 #0.001 
 p_death_inf   <- 0.02
-r_growth_rate <- 1# 1.01 # population growth rate
+r_growth_rate <- 1.00 # 1.01 # population growth rate
 r_birth       <- r_death*r_growth_rate
 
-max_time <- 30
+max_time <- 200
 
 times <- seq(0, max_time, by = 1)
 
-### DoE parameters
-n_hhsize <- 4
-r_beta   <- 0.35
-r_tau    <- 0.35
-r_omega  <- 0
-eff_vax  <- 0
-
-n_exp_states <- 2
-n_inf_states <- 3
-
-# r_vax <- # TBD
-
-### NPIs
-v_npi_times  <- c(0, 15, 16, 70, max_time+1)
-# v_npi_levels <- c(1, 1, 0.2, 0.2, 0.2)
-v_npi_levels <- c(1, 1, df_params$level_npi, df_params$level_npi, df_params$level_npi)
+# NPI policies ----
+v_npi_times  <- c(0, 15, 16, 70, max_time + 1)
+# v_npi_levels <- c(1, 1, 0.2, 0.2, 0.2) # Uncomment to try other NPI 
+v_npi_levels <- c(1, 1, 0.01, 0.01, 0.01)
 # v_npi_levels <- c(1, 1, 0.6, 0.6, 0.6)
 # v_npi_levels <- c(1, 1, 1, 1, 1)
 
 fun_npi <- approxfun(x = v_npi_times, y = v_npi_levels, method = "linear")
 
-### Vax rates
-### vaccination strategies
-v_time_stop_vax <- c(0, 40, 41, max_time+1)
+# Vaccination policies ----
+v_time_stop_vax <- c(0, 40, 41, max_time + 1)
 v_duration  <- diff(c(0, v_time_stop_vax))
-# v_cum_prop_time <- c(0, 0.80, 0, 0)
-v_cum_prop_time <- c(0, df_params$vax_prop, 0, 0)
+# v_cum_prop_time <- c(0, 0.80, 0, 0) # Uncomment to try a vaccination strategy
+v_cum_prop_time <- c(0, 0, 0, 0)
 
+## Change of vaccination policies over time ---
 v_vax_rates <- cbind(daily_rate(cum_prop = v_cum_prop_time[2], # We need constant rate to get up to cumulative coverage
                                 duration = v_duration[2]),       # We need constant rate to get up to cumulative coverage
                      daily_rate(cum_prop = v_cum_prop_time[2],
@@ -78,6 +65,7 @@ v_vax_rates <- cbind(daily_rate(cum_prop = v_cum_prop_time[2], # We need constan
 fun_vax <- approxfun(x = v_time_stop_vax, y = v_vax_rates, method = "linear")
 fun_vax(0:100)
 
+# Create list of parameters ----
 l_parameters <- list(n_pop_size = n_pop_size,
                      n_inf   = n_inf, 
                      r_beta  = r_beta,
@@ -101,20 +89,17 @@ l_parameters <- list(n_pop_size = n_pop_size,
                      fun_npi = fun_npi,
                      fun_vax = fun_vax
 )
-# list2env(l_parameters, envir = .GlobalEnv)
 
+## Verify NPI is working for a specific time ----
 get_npi(n_time = 70, parameters = l_parameters)
 
-## Test run
+# Run the model ----
 sim_time <- system.time(
   l_out <- hh_mc_seir_out(parameters = l_parameters)
 )
-l_out$l_params_all$sim_time <- sim_time[3]
+sim_time
 
-# state <- l_out_test$df_out_hh_mc_seir[12, v_names_states_all]
-# sum(l_out_test$df_out_hh_mc_seir[1, v_names_states_all])
-# View(l_out_test$df_out_hh_mc_seir)
-show_MC_SEIRV_model_results(l_out_test)
-df_inf_test <- calc_inf_totals(l_out_test)
-ggplot(df_inf_test, aes(x = time, y = Inftot)) +
-  geom_line()
+# Plot epidemic outputs ----
+show_MC_EI_model_results(l_out)
+show_MC_SEIRV_model_results(l_out)
+

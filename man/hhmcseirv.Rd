@@ -5,7 +5,8 @@
 \alias{hhmcseirv}
 \title{\code{hhmcseirv} package}
 \description{
-Household multi-compartment (MC) susceptible-exposed-infectious-recovered-vaccinated (SEIRV) model
+Household multi-compartment (MC) susceptible-exposed-infectious-recovered-
+vaccinated (SEIRV) model
 }
 \details{
 See the description of the package on
