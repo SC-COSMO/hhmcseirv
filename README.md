@@ -15,8 +15,9 @@ following manuscript:
 - Alarid-Escudero F, Andrews J, Goldhaber-Fiebert JD. [Effects of
   Mitigation and Control Policies in Realistic Epidemic Models
   Accounting for Household Transmission
-  Dynamics](https://www.medrxiv.org/content/10.1101/2023.01.26.23285075v3).
-  Under review. 2023.
+  Dynamics](https://doi.org/10.1177/0272989X231205565). [Medical
+  Decision Making](https://journals.sagepub.com/home/mdm) 2023; In
+  press. <https://doi.org/10.1177/0272989X231205565>
 
 # Preprint
 
